@@ -16,13 +16,13 @@ interface Props {
 }
 
 const MOLA_URL =
-  "https://api.nasa.gov/mars-wmts/catalog/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0//default/default028mm/{z}/{y}/{x}.jpg";
+  "https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg";
 
 const THEMIS_URL =
-  "https://api.nasa.gov/mars-wmts/catalog/Mars_MO_THEMIS-IR-Day_mosaic_global_100m_v12_clon0_ly/1.0.0//default/default028mm/{z}/{y}/{x}.jpg";
+  "https://trek.nasa.gov/tiles/Mars/EQ/Mars_MO_THEMIS-IR-Day_mosaic_global_100m_v12_clon0_ly/1.0.0/default/default028mm/{z}/{y}/{x}.png";
 
 const HIRISE_CTX_URL =
-  "https://api.nasa.gov/mars-wmts/catalog/CTX_beta01_uncontrolled_5m_Caltech/1.0.0//default/default028mm/{z}/{y}/{x}.png";
+  "https://astro.arcgis.com/arcgis/rest/services/OnMars/CTX/MapServer/tile/{z}/{y}/{x}";
 
 /**
  * Capa SWIM simulada en el cliente (overlay CSS) hasta que el backend

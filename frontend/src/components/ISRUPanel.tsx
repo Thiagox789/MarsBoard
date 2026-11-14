@@ -1,29 +1,61 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useApp } from "@/store/app-store";
-
-const WATER_PER_PROP = 0.45;
+import {
+  calculateIsru,
+  ISRU_DEFAULTS,
+  type IsruResult,
+} from "@/lib/api";
 
 export function ISRUPanel() {
   const { isru, setIsru } = useApp();
+  const [result, setResult] = useState<IsruResult | null>(null);
+  const [status, setStatus] = useState<"loading" | "ok">("loading");
 
-  const calc = useMemo(() => {
-    const { propellantT, iceFraction } = isru;
-    const waterT = propellantT * WATER_PER_PROP;
-    const soilM3 = waterT / (iceFraction * 0.9);
-    const energyKwh = waterT * 550;
-    const days = Math.ceil(energyKwh / (100 * 12));
-    const ch4T = propellantT / 5.5;
-    const o2T = propellantT - ch4T;
-    return { waterT, soilM3, energyKwh, days, ch4T, o2T };
-  }, [isru]);
+  const { propellantT, iceFraction } = isru;
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatus("loading");
+    const t = setTimeout(() => {
+      void calculateIsru({
+        propellant_t: propellantT,
+        ice_fraction: iceFraction,
+        power_kw: ISRU_DEFAULTS.power_kw,
+        operating_hours_per_sol: ISRU_DEFAULTS.operating_hours_per_sol,
+      }).then((r) => {
+        if (!cancelled) {
+          setResult(r);
+          setStatus("ok");
+        }
+      });
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [propellantT, iceFraction]);
+
+  const calc = result;
+  const origin = calc?.source === "api" ? "API" : "LOCAL";
 
   return (
     <section className="px-4 py-4">
-      <h2 className="hud-label mb-3 text-ice">
-        Calculadora ISRU · agua → combustible
-      </h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="hud-label text-ice">
+          Calculadora ISRU · agua → combustible
+        </h2>
+        <span
+          className={`border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-hud ${
+            origin === "API"
+              ? "border-ok/50 bg-ok/10 text-ok"
+              : "border-warn/50 bg-warn/10 text-warn"
+          }`}
+        >
+          {origin}
+        </span>
+      </div>
 
       <div className="space-y-3">
         <Field
@@ -49,37 +81,48 @@ export function ISRUPanel() {
         />
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <Result
-          label="💧 Agua necesaria"
-          value={`${calc.waterT.toFixed(0)} t`}
-          primary
-        />
-        <Result
-          label="⛏ Suelo a excavar"
-          value={`${calc.soilM3.toFixed(0)} m³`}
-        />
-        <Result
-          label="⚡ Energía"
-          value={`${(calc.energyKwh / 1000).toFixed(0)} MWh`}
-        />
-        <Result label="⏱ Tiempo est." value={`${calc.days} soles`} />
-        <Result
-          label="🔥 CH₄"
-          value={`${calc.ch4T.toFixed(0)} t`}
-          accent
-        />
-        <Result
-          label="🫁 O₂"
-          value={`${calc.o2T.toFixed(0)} t`}
-          accent
-        />
-      </div>
+      {status === "loading" && !calc && (
+        <p className="mt-4 font-mono text-[10px] text-ink-dim">Calculando…</p>
+      )}
+
+      {calc && (
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <Result
+            label="💧 Agua necesaria"
+            value={`${calc.water_required_t.toFixed(0)} t`}
+            primary
+          />
+          <Result
+            label="⛏ Suelo a excavar"
+            value={`${calc.soil_volume_m3.toFixed(0)} m³`}
+          />
+          <Result
+            label="⚡ Energía"
+            value={`${(calc.energy_kwh / 1000).toFixed(0)} MWh`}
+          />
+          <Result
+            label="⏱ Tiempo est."
+            value={`${calc.days_estimate} soles`}
+          />
+          <Result
+            label="🔥 CH₄"
+            value={`${calc.products.ch4_t.toFixed(0)} t`}
+            accent
+          />
+          <Result
+            label="🫁 O₂"
+            value={`${calc.products.o2_t.toFixed(0)} t`}
+            accent
+          />
+        </div>
+      )}
 
       <p className="mt-3 border-t border-line pt-2 font-mono text-[9px] leading-relaxed text-ink-dim">
         CO₂ + 4H₂ → CH₄ + 2H₂O · electrólisis → O₂
         <br />
-        Supuestos MVP: 0.45 t H₂O / t propelente · 100 kW · 12 h/sol
+        {origin === "API"
+          ? "POST /api/isru/calculate · 100 kW · 12 h/sol · mix backend 28/72"
+          : "Fallback local (backend caído) · 100 kW · 12 h/sol"}
       </p>
     </section>
   );

@@ -264,13 +264,25 @@ F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9
 |-------|--------|--------|
 | F1 | Scaffold Next.js | ✓ |
 | F2 | Layout UI | ✓ |
-| F3 | Mapa base Marte | ✓ |
-| F4 | Switcher de capas | ✓ |
+| F3 | Mapa base Marte | ✓ (tiles Trek NASA + ArcGIS CTX) |
+| F4 | Switcher de capas | ✓ (overlay cliente + leyenda; tiles reales cuando haya backend) |
 | F5 | Capas de hielo (SWIM/WEH) | ✓ (overlay cliente + leyenda; tiles reales cuando haya backend) |
 | F6 | Prospector click | ✓ (mock local `src/lib/api.ts`; swap automático si hay backend) |
-| F7 | Marcador AP-1 | ✓ (datos curados locales; fetch a backend si está) |
-| F8 | Calculadora ISRU | ✓ (cálculo local; POST a backend si está) |
-| F9 | Ranking + briefing | ✓ (ranking mock + briefing copiable/imprimible) |
+| F7 | Marcador AP-1 | ✓ (**cableado** `GET /api/site/ap1` + adapter; fallback local) |
+| F8 | Calculadora ISRU | ✓ (**cableado** `POST /api/isru/calculate`; badge API/LOCAL) |
+| F9 | Ranking + briefing | ✓ (ranking mock + briefing copiable/imprimible; ISRU del briefing usa backend) |
+
+### Integración backend (rama thiago2)
+| Paso | Estado |
+|------|--------|
+| `Backend/.env` con `NASA_API_KEY` | ✓ |
+| `frontend/.env.local` → `NEXT_PUBLIC_API_URL` | ✓ |
+| `GET /health` | ✓ |
+| `GET /api/site/ap1` + adapter → SitePanel | ✓ |
+| `POST /api/isru/calculate` → ISRUPanel (debounce 300ms) | ✓ |
+| Briefing fallback reutiliza ISRU del backend | ✓ |
+| Tiles MOLA/THEMIS/CTX vía trek.nasa.gov / ArcGIS | ✓ |
+| Pendiente Juli: B3 ice/sample, B5 deposits/rank, B7 briefing | ⬜ (front ya hace tryFetch → mock) |
 
 ---
 

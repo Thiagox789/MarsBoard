@@ -1,18 +1,20 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { AppProvider } from "@/store/app-store";
 
-const plexSans = IBM_Plex_Sans({
-  subsets: ["latin"],
+const plexSans = localFont({
+  src: "./fonts/GeistVF.woff",
   variable: "--font-plex-sans",
-  weight: ["400", "500", "600", "700"],
+  weight: "100 900",
+  display: "swap",
 });
 
-const plexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
+const plexMono = localFont({
+  src: "./fonts/GeistMonoVF.woff",
   variable: "--font-plex-mono",
-  weight: ["400", "500", "600"],
+  weight: "100 900",
+  display: "swap",
 });
 
 export const metadata: Metadata = {

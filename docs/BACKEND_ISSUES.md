@@ -64,10 +64,14 @@ B1 → B2 → B3 → B4 → B5 → B6 → B7
 **Pasos:**
 1. Ruta genérica de tiles, ej:
    - `GET /api/tiles/basemap/:z/:x/:y.jpg`
-2. Proxy a:
-   - MOLA: `https://api.nasa.gov/mars-wmts/catalog/.../{z}/{y}/{x}.jpg`
-   - Opcional CTX/HiRISE THEMIS desde Mars Trek
-3. Cachear tile en disco (no re-descargar).
+2. Proxy directo (sin API key; `api.nasa.gov/mars-wmts` es inestable):
+   - MOLA: `https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg`
+   - THEMIS día/noche: `.../THEMIS_{DayIR|NightIR}_ControlledMosaics_100m_v2_oct2018/1.0.0/default/default028mm/{z}/{y}/{x}.png`
+   - CTX: `https://astro.arcgis.com/arcgis/rest/services/OnMars/CTX/MapServer/tile/{z}/{y}/{x}`
+   - HiRISE: `https://astro.arcgis.com/arcgis/rest/services/OnMars/HiRISE/MapServer/tile/{z}/{y}/{x}`
+   - Matriz `2^(z+1) × 2^z`, origen lon −180 / lat 90, `y` top-origin. AP-1 en z7 → `x=15, y=35`.
+   - Tiles: MOLA/THEMIS 256 px; CTX/HiRISE 512 px.
+3. Cachear tile en disco (`src/data/cache/tiles/`, no re-descargar).
 4. Headers cache (`Cache-Control`, `ETag`).
 5. Timeout + manejo de 404 (tile sin cobertura).
 
@@ -91,7 +95,8 @@ B1 → B2 → B3 → B4 → B5 → B6 → B7
 **Pasos:**
 1. **Preparar datos** (una vez, en `backend/src/data/`):
    - Bajar GeoTIFFs de https://swim.psi.edu/ (SWIM 1.0 / 2.0):
-     - Combined Ice Consistency (0–1 m, 1–5 m, >5 m)
+     - SWIM 2.0 Global Composite: `SWIM2_c0_1.tif`, `SWIM2_c1_5.tif`, `SWIM2_c_5.tif`
+       (`https://swim.psi.edu/output/SWIM2/Global/Composite/`)
      - Neutron (WEH)
      - Opcional: geomorphology, thermal, radar surface power
    - Recortar/crop a bbox alrededor de AP-1 (~38–42°N, 200–204°E) con `gdalwarp` o rasterio.
@@ -120,6 +125,11 @@ B1 → B2 → B3 → B4 → B5 → B6 → B7
 - Sample en AP-1 devuelve scores > 0 (hielo confirmado)
 - Coordenadas fuera de bbox responden sin datos (no 500)
 - GeoTIFFs recortados documentados en `data/README`
+
+**Implementado:** `/api/ice/sample`, `/api/ice/manifest` y `/api/ice/overlay.png`.
+Además, tiles bajo demanda en `/api/tiles/swim/{z}/{x}/{y}.png`,
+`/api/tiles/weh/{z}/{x}/{y}.png` y `/api/tiles/ice/:kind/...`. El sample
+incluye `weh_percent`, `weh_source`, `terrain.elevation_m` y `terrain.slope_deg`.
 
 **Dependencias:** B1
 
@@ -193,6 +203,11 @@ B1 → B2 → B3 → B4 → B5 → B6 → B7
 - Ranking ordenado, sin duplicados
 - Incluye distancia a AP-1
 - Responde <2s con caché fría
+
+**Implementado:** pendiente y elevación desde MOLA DEM 463 m
+(`mola_ap1_slope.tif`, `mola_ap1_dem.tif`). Cada depósito incluye `slope_deg`
+y `elevation_m`; la penalidad va de 0 (≤10°) a 0.3 (≥25°) y se expone en
+`terrain_penalty`.
 
 **Dependencias:** B3
 
@@ -291,13 +306,13 @@ B1 → B2 → B3 → B4 → B5 → B6 → B7
 
 | Issue | Título | Estado |
 |-------|--------|--------|
-| B1 | Scaffold API | ⬜ |
-| B2 | Proxy de tiles NASA | ⬜ |
-| B3 | Muestreo de hielo (SWIM/WEH) | ⬜ |
-| B4 | Sitio AP-1 curado | ⬜ |
-| B5 | Ranking de yacimientos | ⬜ |
-| B6 | Calculadora ISRU | ⬜ |
-| B7 | Briefing de extracción | ⬜ |
+| B1 | Scaffold API | ✅ |
+| B2 | Proxy de tiles NASA | ✅ |
+| B3 | Muestreo de hielo (SWIM/WEH) | ✅ |
+| B4 | Sitio AP-1 curado | ✅ |
+| B5 | Ranking de yacimientos | ✅ |
+| B6 | Calculadora ISRU | ✅ |
+| B7 | Briefing de extracción | ✅ |
 
 ---
 
@@ -306,18 +321,24 @@ B1 → B2 → B3 → B4 → B5 → B6 → B7
 | Dataset | URL | Uso |
 |---------|-----|-----|
 | SWIM Combined Ice Consistency | https://swim.psi.edu/ (Products) | Capa principal de hielo |
-| SWIM Neutron (WEH) | https://swim.psi.edu/ | % agua en superficie |
-| GeoTIFF recorte AP-1 | generar con gdalwarp | Optimizar tamaño |
+| SWIM 2.0 por profundidad | `output/SWIM2/Global/Composite/SWIM2_c0_1.tif`, `_c1_5`, `_c_5` | Hielo 0–1, 1–5, >5 m |
+| SWIM Neutron (WEH) | https://swim.psi.edu/ | % agua en superficie (escalado; invertir) |
+| MOLA DEM 463 m | https://planetarymaps.usgs.gov/mosaic/Mars_MGS_MOLA_DEM_mosaic_global_463m.tif | Elevación y pendiente |
+| GeoTIFF recorte AP-1 | generar con rasterio/gdalwarp | Optimizar tamaño |
 | Sitio AP-1 papers | Luzzi 2025, Bramson 2015, Golombek 2021 | Datos curados B4 |
 
 Comando ejemplo de recorte (una vez):
 ```bash
 gdalwarp -overwrite \
   -te 199 38 205 43 \
-  -tr 0.03 0.03 \
+  -tr 0.05 0.05 \
   SWIM_Combined_North.tif \
   data/swim_ap1.tif
 ```
+
+El ráster W_dn original de Pathare 2018 no se distribuye aparte: el
+`Ancillary.zip` de `Northern_Cn` solo trae el README. Se recupera invirtiendo
+el escalado de SWIM (`10 + 15n` / `10 + 5n`).
 
 ---
 

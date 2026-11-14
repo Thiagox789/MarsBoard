@@ -17,12 +17,14 @@ app.use((req, res) => {
 })
 
 app.use((err, req, res, next) => {
-  console.error(err)
   if (res.headersSent) return next(err)
-  res.status(err.status || 500).json({
+  if (!err.status || err.status >= 500) console.error(err)
+  const payload = {
     error: err.code || 'internal_error',
     message: err.message || 'Unexpected error',
-  })
+  }
+  if (err.details) payload.details = err.details
+  res.status(err.status || 500).json(payload)
 })
 
 app.listen(port, () => {

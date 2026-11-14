@@ -1,0 +1,141 @@
+{
+  "site": "AP-1",
+  "bbox": {
+    "minLon": 199.0,
+    "minLat": 38.0,
+    "maxLon": 205.0,
+    "maxLat": 43.0
+  },
+  "crs": "Mars sphere (a=b=3396190), geographic lon/lat",
+  "resolution_deg": 0.05,
+  "grid": {
+    "width": 120,
+    "height": 100
+  },
+  "source_portal": "https://swim.psi.edu/",
+  "source_base": "https://swim.psi.edu/output/",
+  "weh_from_neutron": {
+    "input": "SWIM neutron consistency scaled to [-1, 1]",
+    "formula_positive": "10 + 15 * n",
+    "formula_negative": "10 + 5 * n",
+    "cap_positive_percent": 25
+  },
+  "layers": [
+    {
+      "file": "swim_ap1_consistency_0_1m.tif",
+      "kind": "c0_1",
+      "description": "SWIM 2.0 Combined Ice Consistency (0-1 m)",
+      "units": "0-1",
+      "nodata": -100.0,
+      "source": "SWIM2/Global/Composite/SWIM2_c0_1.tif"
+    },
+    {
+      "file": "swim_ap1_consistency_1_5m.tif",
+      "kind": "c1_5",
+      "description": "SWIM 2.0 Combined Ice Consistency (1-5 m)",
+      "units": "0-1",
+      "nodata": -100.0,
+      "source": "SWIM2/Global/Composite/SWIM2_c1_5.tif"
+    },
+    {
+      "file": "swim_ap1_consistency_gt5m.tif",
+      "kind": "gt5m",
+      "description": "SWIM 2.0 Combined Ice Consistency (>5 m)",
+      "units": "0-1",
+      "nodata": -100.0,
+      "source": "SWIM2/Global/Composite/SWIM2_c_5.tif"
+    },
+    {
+      "file": "swim_ap1_ice_consistency.tif",
+      "kind": "ci_swim1",
+      "description": "SWIM 1.0 Combined Ice Consistency (legacy, top ~1 m)",
+      "units": "0-1",
+      "nodata": -30.0,
+      "source": "NorthernHemisphere/Northern/Northern_Ci.tif"
+    },
+    {
+      "file": "swim_ap1_neutron_weh.tif",
+      "kind": "neutron",
+      "description": "Neutron consistency (WEH escalado a la ecuacion SWIM, Pathare 2018)",
+      "units": "-1..1 (escalado; invertir con weh_from_neutron)",
+      "nodata": -30.0,
+      "source": "NorthernHemisphere/Northern/Northern_Cn.tif"
+    },
+    {
+      "file": "swim_ap1_depth.tif",
+      "kind": "depth",
+      "description": "Depth to subsurface interface (Bramson 2015)",
+      "units": "m",
+      "nodata": -30.0,
+      "source": "NorthernHemisphere/Northern/Northern_Depth.tif"
+    },
+    {
+      "file": "swim_ap1_geomorphology.tif",
+      "kind": "geomorphology",
+      "description": "Geomorphology consistency",
+      "units": "0-1",
+      "nodata": -200.0,
+      "source": "NorthernHemisphere/Northern/Northern_Cg.tif"
+    },
+    {
+      "file": "swim_ap1_radar_dielectric.tif",
+      "kind": "radar_dielectric",
+      "description": "Radar dielectric consistency",
+      "units": "0-1",
+      "nodata": -30.0,
+      "source": "NorthernHemisphere/Northern/Northern_Crd.tif"
+    },
+    {
+      "file": "swim_ap1_radar_power.tif",
+      "kind": "radar_power",
+      "description": "Radar surface power consistency",
+      "units": "0-1",
+      "nodata": -30.0,
+      "source": "NorthernHemisphere/Northern/Northern_Crs.tif"
+    },
+    {
+      "file": "swim_ap1_thermal.tif",
+      "kind": "thermal",
+      "description": "Thermal consistency",
+      "units": "0-1",
+      "nodata": -30.0,
+      "source": "NorthernHemisphere/Northern/Northern_Ct.tif"
+    },
+    {
+      "file": "swim_ap1_weh.tif",
+      "kind": "weh",
+      "description": "Water-equivalent hydrogen (W_dn, Pathare 2018) recuperado del neutrón SWIM",
+      "units": "percent WEH",
+      "nodata": -9999.0,
+      "source": "NorthernHemisphere/Northern/Northern_Cn.tif",
+      "derived": true,
+      "method": "inverse SWIM scaling: n>=0 -> 10+15n; n<0 -> 10+5n",
+      "saturation_percent": 25
+    },
+    {
+      "file": "mola_ap1_dem.tif",
+      "kind": "dem",
+      "description": "MOLA global DEM (463 m) remuestreado a la grilla AP-1",
+      "units": "m",
+      "nodata": -32768.0,
+      "source": "https://planetarymaps.usgs.gov/mosaic/Mars_MGS_MOLA_DEM_mosaic_global_463m.tif"
+    },
+    {
+      "file": "mola_ap1_slope.tif",
+      "kind": "slope",
+      "description": "Pendiente del terreno derivada del DEM MOLA a 0.05 deg",
+      "units": "degrees",
+      "nodata": -9999.0,
+      "source": "derived from MOLA DEM 463 m"
+    }
+  ],
+  "notes": [
+    "Cropped from SWIM GeoTIFFs to lon 199-205, lat 38-43 at 0.05 deg (~3 km), nearest resampling.",
+    "consistency_0_1m/1_5m/gt5m come from SWIM 2.0 global products (2964 m, nodata -100).",
+    "Northern_Cim.tif was skipped: it is an Adobe Illustrator RGB figure with no CRS/geotransform.",
+    "Neutron layer stores the SWIM-scaled consistency, not raw WEH %; invert it with weh_from_neutron.",
+    "The weh layer is the Pathare 2018 W_dn recovered from SWIM's invertible scaling. SWIM saturates at 25% (n>=1) and -1 maps to <5%, so extremes are clipped; AP-1 (17.7%) is unaffected.",
+    "DEM/slope come from the USGS MOLA 463 m global DEM, bilinearly resampled to 0.05 deg; slope uses MARS_RADIUS=3396.19 km.",
+    "Thermal layer is 0 across the AP-1 window; radar power is 0 at AP-1. SWIM already combines these in the consistency layers."
+  ]
+}

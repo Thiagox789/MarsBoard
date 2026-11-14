@@ -129,7 +129,8 @@ B1 → B2 → B3 → B4 → B5 → B6 → B7
 **Implementado:** `/api/ice/sample`, `/api/ice/manifest` y `/api/ice/overlay.png`.
 Además, tiles bajo demanda en `/api/tiles/swim/{z}/{x}/{y}.png`,
 `/api/tiles/weh/{z}/{x}/{y}.png` y `/api/tiles/ice/:kind/...`. El sample
-incluye `weh_percent`, `weh_source`, `terrain.elevation_m` y `terrain.slope_deg`.
+incluye `weh_percent`, `weh_source`, `depth_hint_m`, `depth_hint_cm`,
+`terrain.elevation_m` y `terrain.slope_deg`.
 
 **Dependencias:** B1
 
@@ -239,10 +240,10 @@ y `elevation_m`; la penalidad va de 0 (≤10°) a 0.3 (≥25°) y se expone en
 3. Respuesta:
    ```json
    {
-     "water_required_t": 450,
-     "soil_volume_m3": 1000,
-     "energy_kwh": 250000,
-     "days_estimate": 104,
+    "water_required_t": 450,
+    "soil_volume_m3": 1000,
+    "energy_kwh": 250200,
+    "days_estimate": 208.5,
      "systems": {
        "excavator_t": 40,
        "extractor_t": 26,
@@ -297,6 +298,11 @@ y `elevation_m`; la penalidad va de 0 (≤10°) a 0.3 (≥25°) y se expone en
 **Criterio de aceptación:**
 - Un solo call arma el briefing completo
 - JSON fácil de renderizar en frontend
+
+**Implementado:** `POST /api/briefing` y `GET /api/briefing/export` (Markdown).
+Si `power_kw` u `operating_hours_per_sol` no vienen en el body, se usan
+defaults de **100 kW** y **12 h/sol**; así el body mínimo documentado
+(`lat, lon, propellant_t, ice_fraction`) funciona sin cambios.
 
 **Dependencias:** B3, B4, B6
 

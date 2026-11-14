@@ -23,6 +23,20 @@ test('briefing completo en AP-1', async () => {
   assert.ok(briefing.sources.length > 0)
 })
 
+test('briefing usa defaults de potencia y horas', async () => {
+  const briefing = await buildBriefing({
+    lat: 39.8,
+    lon: 202.1,
+    propellant_t: 1000,
+    ice_fraction: 0.5,
+  })
+  assert.equal(briefing.isru.inputs.power_kw, 100)
+  assert.equal(briefing.isru.inputs.operating_hours_per_sol, 12)
+  assert.equal(briefing.deposit.depth_hint_m, '0.08-0.12')
+  assert.equal(briefing.deposit.depth_hint_cm, '8-12 cm')
+  assert.match(formatBriefingMarkdown(briefing), /Ice table: 8-12 cm/)
+})
+
 test('briefing rechaza ISRU inválido', async () => {
   await assert.rejects(
     buildBriefing({ ...base, propellant_t: -1 }),

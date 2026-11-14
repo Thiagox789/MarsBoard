@@ -19,7 +19,12 @@ export async function buildBriefing(body = {}) {
     throw httpError(400, 'invalid_coordinates', 'lon debe ser un número')
   }
 
-  const { errors, input } = validateIsruInput(body)
+  const withDefaults = {
+    ...body,
+    power_kw: body.power_kw ?? 100,
+    operating_hours_per_sol: body.operating_hours_per_sol ?? 12,
+  }
+  const { errors, input } = validateIsruInput(withDefaults)
   if (errors.length) {
     throw httpError(400, 'invalid_input', 'Parámetros ISRU inválidos', errors)
   }
@@ -70,7 +75,7 @@ export function formatBriefingMarkdown(briefing) {
     `- Consistencia 1–5 m: ${deposit.swim.consistency_1_5m ?? 'sin dato'}`,
     `- Consistencia >5 m: ${deposit.swim.consistency_gt5m ?? 'sin dato'}`,
     `- WEH: ${deposit.weh_percent ?? 'sin dato'} %`,
-    `- Ice table: ${deposit.depth_hint_m ?? 'sin dato'}`,
+    `- Ice table: ${deposit.depth_hint_cm ?? deposit.depth_hint_m ?? 'sin dato'}`,
     `- Interfaz inferior: ${deposit.interface_depth_m ?? 'sin dato'} m`,
     '',
     '## ISRU',

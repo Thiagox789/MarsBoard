@@ -74,6 +74,7 @@ function emptyDeposit(lat, lon, message) {
     weh_percent: null,
     weh_source: null,
     depth_hint_m: null,
+    depth_hint_cm: null,
     interface_depth_m: null,
     neutron_consistency: null,
     terrain: null,
@@ -148,7 +149,10 @@ export async function sampleIce(lat, lon) {
     },
     weh_percent: weh == null ? null : round(weh, 1),
     weh_source: values.weh != null ? 'swim_weh_layer' : derivedWeh == null ? null : 'neutron_inverse',
-    depth_hint_m: iceTable ? `${iceTable.min}-${iceTable.max} cm` : null,
+    depth_hint_m: iceTable
+      ? `${(iceTable.min / 100).toFixed(2)}-${(iceTable.max / 100).toFixed(2)}`
+      : null,
+    depth_hint_cm: iceTable ? `${iceTable.min}-${iceTable.max} cm` : null,
     interface_depth_m: values.depth == null ? null : round(values.depth, 1),
     neutron_consistency: values.neutron == null ? null : round(values.neutron, 3),
     terrain: {

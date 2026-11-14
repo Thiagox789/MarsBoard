@@ -1,0 +1,51 @@
+{
+  "id": "ap1",
+  "name": "AP-1 (Arcadia/Amazonis prime site)",
+  "region": "límite Arcadia Planitia / norte Amazonis Planitia",
+  "coordinates": {
+    "lat": 39.8,
+    "lon": 202.1,
+    "lon_signed": -157.9
+  },
+  "elevation_km": -3.9,
+  "elevation_reference": "geoide MOLA",
+  "ice_table_cm": {
+    "min": 8,
+    "max": 12,
+    "source": "Luzzi et al. 2025"
+  },
+  "excess_ice_layer_m": {
+    "base_mode": 42,
+    "mean": 51,
+    "source": "Bramson et al. 2015"
+  },
+  "arcadia_ice_volume_km3": {
+    "min": 1.3e4,
+    "max": 6.1e4,
+    "source": "Bramson et al. 2015"
+  },
+  "weh_percent": {
+    "odyssey_ns": { "min": 15, "max": 20, "source": "Pathare 2018 / MONS" },
+    "frend": { "min": 11, "max": 13, "source": "FREND" }
+  },
+  "landing_safety": {
+    "rating": "prime site",
+    "source": "Golombek et al. 2021"
+  },
+  "nearby_features": [
+    "polígonos de ~11 m",
+    "brain terrain",
+    "cráteres con hielo expuesto a ~23 km de AP-1"
+  ],
+  "isru_potential": {
+    "summary": "Hielo accesible para electrólisis y producción de CH₄/O₂ vía Sabatier.",
+    "pathway": "CO2 + 4H2 -> CH4 + 2H2O; 2H2O -> 2H2 + O2"
+  },
+  "sources": [
+    "Golombek et al. 2021 — Seguridad de aterrizaje y coordenadas de AP-1",
+    "Luzzi et al. 2025 — Ice table somera (8–12 cm)",
+    "Bramson et al. 2015 — Capa de exceso (~42–51 m) y volumen de hielo en Arcadia",
+    "Pathare 2018 / MONS — WEH 15–20% (Odyssey Neutron Spectrometer)",
+    "FREND — WEH 11–13%"
+  ]
+}

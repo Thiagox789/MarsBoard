@@ -69,13 +69,29 @@ recortados. AP-1 (17.7 %) no se ve afectado.
 - Pathare et al. 2018 (neutrones Odyssey NS)
 - Bramson et al. 2015 (profundidad de la capa de exceso)
 
+### GeoTIFF globales de origen
+
+Los tres composites globales de SWIM 2.0 usados para generar las capas AP-1
+están en `src/data/swim/global/`:
+
+```
+SWIM2_c0_1.tif   # hielo 0–1 m
+SWIM2_c1_5.tif   # hielo 1–5 m
+SWIM2_c_5.tif    # hielo >5 m
+```
+
+Son 7200 × 2400 px (~3 km), ~204 MB en total. La API **no** los sirve
+directamente: sirve los recortes AP-1 derivados de ellos. Los archivos globales
+están ignorados por git para no inflar el repositorio; si faltan, se descargan
+de <https://swim.psi.edu/output/SWIM2/Global/Composite/>.
+
 ## Cómo regenerar
 
 Requiere `rasterio` + `numpy` (probado con rasterio 1.5.2 en un venv).
 
-1. Descargar los GeoTIFF globales de SWIM 2.0 (`SWIM2_c0_1.tif`,
-   `SWIM2_c1_5.tif`, `SWIM2_c_5.tif`) y de SWIM 1.0 (`Northern_*.tif`) desde
-   <https://swim.psi.edu/>.
+1. Los GeoTIFF globales de SWIM 2.0 (`SWIM2_c0_1.tif`, `SWIM2_c1_5.tif`,
+   `SWIM2_c_5.tif`) están en `src/data/swim/global/`; los de SWIM 1.0
+   (`Northern_*.tif`) se descargan desde <https://swim.psi.edu/>.
 2. Recortarlos a la ventana AP-1 con `rasterio.warp.reproject` hacia
    `+proj=longlat +a=3396190 +b=3396190` (0.05°, 120×100, nearest). La ventana
    se calcula con longitudes 0–360 y luego se pasa a la convención signed del

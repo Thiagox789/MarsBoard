@@ -421,7 +421,10 @@ Capas principales en `src/data/swim/`:
 | `mola_ap1_dem.tif` | `dem` | DEM MOLA 463 m | m | -32768 |
 | `mola_ap1_slope.tif` | `slope` | Pendiente | grados | -9999 |
 
-Detalle completo de capas, CRS, WEH y regeneración:
+Los tres GeoTIFF globales de origen SWIM 2.0 (`SWIM2_c0_1.tif`,
+`SWIM2_c1_5.tif`, `SWIM2_c_5.tif`) están en `src/data/swim/global/`
+(~204 MB). La API sirve los recortes AP-1 derivados de ellos; los globales
+están ignorados por git. Detalle completo de capas, CRS, WEH y regeneración:
 [`src/data/README.md`](src/data/README.md).
 
 ### WEH

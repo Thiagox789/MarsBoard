@@ -24,11 +24,20 @@ const THEMIS_URL =
 const HIRISE_CTX_URL =
   "https://astro.arcgis.com/arcgis/rest/services/OnMars/CTX/MapServer/tile/{z}/{y}/{x}";
 
-/**
- * Capa SWIM simulada en el cliente (overlay CSS) hasta que el backend
- * sirva tiles GeoTIFF. Pinta una malla translúcida con colormap por score.
- */
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
+/** Bbox SWIM backend (manifest): 199–205°E, 38–43°N → Leaflet signed lon. */
+const SWIM_BOUNDS: L.LatLngBoundsExpression = [
+  [38, -161],
+  [43, -155],
+];
+
+/** Overlay real del backend (consistencia 0–1 m); fallback mock si falla. */
 function swimOverlayUrl(): string {
+  return `${API_BASE}/api/ice/overlay.png`;
+}
+
+function swimFallbackUrl(): string {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">
     <defs>
       <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
@@ -159,18 +168,25 @@ export default function MarsMap({
     apply(themis, activeLayers.includes("themis"), "themis");
     apply(hirise, activeLayers.includes("hirise"), "hirise");
 
-    // SWIM overlay (mock cliente) — bbox ventana AP-1
+    // SWIM overlay real del backend (fallback mock si la imagen falla)
     const swimOn = activeLayers.includes("swim");
-    const bounds: L.LatLngBoundsExpression = [
-      [38, 202.1 - 180 - 2.5],
-      [42, 202.1 - 180 + 2.5],
-    ];
     if (swimOn) {
       if (!swimOverlayRef.current) {
-        swimOverlayRef.current = L.imageOverlay(swimOverlayUrl(), bounds, {
+        const overlay = L.imageOverlay(swimOverlayUrl(), SWIM_BOUNDS, {
           opacity: layerOpacity.swim ?? 0.75,
           interactive: false,
         });
+        // Si el PNG del backend no carga, caer al mock del cliente
+        const img = new Image();
+        img.onerror = () => {
+          if (map.hasLayer(overlay)) map.removeLayer(overlay);
+          swimOverlayRef.current = L.imageOverlay(swimFallbackUrl(), SWIM_BOUNDS, {
+            opacity: layerOpacity.swim ?? 0.75,
+            interactive: false,
+          }).addTo(map);
+        };
+        img.src = swimOverlayUrl();
+        swimOverlayRef.current = overlay;
       }
       swimOverlayRef.current.setOpacity(layerOpacity.swim ?? 0.75);
       if (!map.hasLayer(swimOverlayRef.current))
@@ -179,8 +195,7 @@ export default function MarsMap({
       map.removeLayer(swimOverlayRef.current);
     }
 
-    // WEH: mismo overlay con tinte distinto si está activo (placeholder)
-    // (backend B3 lo reemplaza por tiles reales)
+    // WEH: capa definida en LAYERS; sin overlay PNG en el backend aún
   }, [activeLayers, layerOpacity]);
 
   // Marcadores de ranking (F9)

@@ -28,6 +28,7 @@ interface AppState {
 
   deposits: Deposit[];
   depositsStatus: "idle" | "loading" | "ok" | "error";
+  depositsSource: "api" | "local" | null;
   loadDeposits: () => Promise<void>;
   focusDeposit: Deposit | null;
   setFocusDeposit: (d: Deposit | null) => void;
@@ -63,6 +64,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [deposits, setDeposits] = useState<Deposit[]>([]);
   const [depositsStatus, setDepositsStatus] =
     useState<AppState["depositsStatus"]>("idle");
+  const [depositsSource, setDepositsSource] = useState<
+    AppState["depositsSource"]
+  >(null);
   const [focusDeposit, setFocusDeposit] = useState<Deposit | null>(null);
   const [isru, setIsruState] = useState({
     propellantT: 1000,
@@ -106,6 +110,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const r = await fetchRanking();
       setDeposits(r.deposits);
+      setDepositsSource(r.source ?? null);
       setDepositsStatus("ok");
     } catch {
       setDepositsStatus("error");
@@ -129,6 +134,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       probe,
       deposits,
       depositsStatus,
+      depositsSource,
       loadDeposits,
       focusDeposit,
       setFocusDeposit,
@@ -149,6 +155,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       probe,
       deposits,
       depositsStatus,
+      depositsSource,
       loadDeposits,
       focusDeposit,
       isru,

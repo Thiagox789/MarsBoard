@@ -110,6 +110,18 @@ export function LayersPanel() {
           )}
           {sampleStatus === "ok" && sample && (
             <>
+              <div className="flex items-center justify-between pb-1">
+                <span className="hud-label">Origen</span>
+                <span
+                  className={`border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-hud ${
+                    sample.source === "api"
+                      ? "border-ok/50 bg-ok/10 text-ok"
+                      : "border-warn/50 bg-warn/10 text-warn"
+                  }`}
+                >
+                  {sample.source === "api" ? "API" : "LOCAL"}
+                </span>
+              </div>
               <ScoreRow
                 label="SWIM 0–1 m"
                 value={sample.swim.consistency_0_1m}

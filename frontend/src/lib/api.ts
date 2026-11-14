@@ -11,6 +11,8 @@ export interface IceSample {
   weh_percent: number | null;
   depth_hint_m: string | null;
   sources: string[];
+  /** Origen: "api" | "local" (mock). */
+  source?: "api" | "local";
 }
 
 export interface Deposit {
@@ -27,6 +29,8 @@ export interface DepositRanking {
   deposits: Deposit[];
   bbox: string;
   count: number;
+  /** Origen de los datos: "api" | "local" (fallback). */
+  source?: "api" | "local";
 }
 
 export interface Briefing {
@@ -249,7 +253,7 @@ function syntheticIce(lat: number, lon: number): IceSample {
   if (!inBox) {
     return {
       lat,
-      lon,
+      lon: lonLeaflet(lon),
       has_data: false,
       swim: {
         consistency_0_1m: null,
@@ -276,7 +280,7 @@ function syntheticIce(lat: number, lon: number): IceSample {
 
   return {
     lat,
-    lon: lon0360,
+    lon: lonLeaflet(lon0360),
     has_data: true,
     swim: {
       consistency_0_1m: Number(s01.toFixed(2)),
@@ -314,7 +318,7 @@ function syntheticRanking(limit = 12): DepositRanking {
       score >= 0.75 ? "ALTA" : score >= 0.5 ? "MEDIA" : "BAJA";
     return {
       lat,
-      lon,
+      lon: lonLeaflet(lon),
       score: Number(score.toFixed(2)),
       swim_0_1m: s.swim.consistency_0_1m ?? 0,
       weh_percent: s.weh_percent ?? 0,
@@ -329,6 +333,7 @@ function syntheticRanking(limit = 12): DepositRanking {
     deposits,
     bbox: "39.5,201.0,40.5,203.5",
     count: deposits.length,
+    source: "local",
   };
 }
 
@@ -345,6 +350,115 @@ async function tryFetch<T>(path: string, init?: RequestInit): Promise<T | null> 
   }
 }
 
+// —— Adaptadores backend → shape UI ——
+
+/** HIGH/MEDIUM/LOW (backend) → ALTA/MEDIA/BAJA (UI). */
+function mapPriority(raw: unknown): Deposit["priority"] {
+  const p = String(raw ?? "").toUpperCase();
+  if (p === "HIGH" || p === "ALTA") return "ALTA";
+  if (p === "MEDIUM" || p === "MEDIA") return "MEDIA";
+  return "BAJA";
+}
+
+/** Longitud Leaflet: normaliza a −180..180 si viene 0–360. */
+function lonLeaflet(lon: number): number {
+  if (!Number.isFinite(lon)) return lon;
+  const n = ((lon + 180) % 360 + 360) % 360 - 180;
+  return n === -180 && lon > 0 ? 180 : n;
+}
+
+interface RawDeposit {
+  lat: number;
+  lon: number;
+  score: number;
+  swim_0_1m?: number | null;
+  weh_percent?: number | null;
+  distance_from_ap1_km: number;
+  priority?: string;
+}
+
+function adapterRanking(raw: {
+  deposits?: RawDeposit[];
+  bbox?: string;
+  count?: number;
+}): DepositRanking {
+  const deposits = (raw.deposits ?? []).map((d) => ({
+    lat: Number(d.lat),
+    lon: lonLeaflet(Number(d.lon)),
+    score: Number(d.score) || 0,
+    swim_0_1m: d.swim_0_1m == null ? 0 : Number(d.swim_0_1m),
+    weh_percent: d.weh_percent == null ? 0 : Number(d.weh_percent),
+    distance_from_ap1_km: Number(d.distance_from_ap1_km) || 0,
+    priority: mapPriority(d.priority),
+  }));
+  return {
+    deposits,
+    bbox: raw.bbox ?? "199,38,205,43",
+    count: raw.count ?? deposits.length,
+    source: "api",
+  };
+}
+
+interface RawBriefing {
+  site?: Record<string, unknown>;
+  deposit?: {
+    lat?: number;
+    lon?: number;
+    swim?: { consistency_0_1m?: number | null };
+    weh_percent?: number | null;
+  };
+  isru?: {
+    water_required_t?: number;
+    soil_volume_m3?: number;
+    energy_kwh?: number;
+    days_estimate?: number;
+    products?: { ch4_t?: number; o2_t?: number };
+  };
+  recommendation?: string;
+  priority?: string;
+  deposit_score?: number;
+  generated_at?: string;
+}
+
+function adapterBriefing(raw: RawBriefing): Briefing {
+  const site = adapterSite(raw.site ?? {});
+  const deposit = raw.deposit ?? {};
+  const isru = raw.isru ?? {};
+  const products = isru.products ?? {};
+  const score = Number(raw.deposit_score ?? 0) || 0;
+
+  return {
+    site: {
+      id: site.id,
+      name: site.name,
+      lat: site.lat,
+      lon: site.lon,
+      elevation_km: site.elevationKm,
+      ice_table_cm: `${site.iceTableCm[0]}–${site.iceTableCm[1]}`,
+      weh_percent: `${site.wehPercent[0]}–${site.wehPercent[1]}`,
+      landing_safety: site.landingSafety,
+    },
+    deposit: {
+      lat: Number(deposit.lat ?? site.lat),
+      lon: lonLeaflet(Number(deposit.lon ?? site.lon)),
+      score,
+      priority: mapPriority(raw.priority),
+      swim_0_1m: deposit.swim?.consistency_0_1m ?? 0,
+      weh_percent: deposit.weh_percent ?? 0,
+    },
+    isru: {
+      water_required_t: Number(isru.water_required_t ?? 0),
+      soil_volume_m3: Number(isru.soil_volume_m3 ?? 0),
+      energy_kwh: Number(isru.energy_kwh ?? 0),
+      days_estimate: Number(isru.days_estimate ?? 0),
+      ch4_t: Number(products.ch4_t ?? 0),
+      o2_t: Number(products.o2_t ?? 0),
+    },
+    recommendation: raw.recommendation ?? "SIN DATOS SUFICIENTES",
+    generated_at: raw.generated_at ?? new Date().toISOString(),
+  };
+}
+
 export async function fetchIceSample(
   lat: number,
   lon: number
@@ -352,16 +466,35 @@ export async function fetchIceSample(
   const remote = await tryFetch<IceSample>(
     `/api/ice/sample?lat=${lat}&lon=${lon}`
   );
-  if (remote) return remote;
-  return syntheticIce(lat, lon);
+  if (remote) {
+    return {
+      ...remote,
+      lon: lonLeaflet(Number(remote.lon)),
+      swim: {
+        consistency_0_1m: remote.swim?.consistency_0_1m ?? null,
+        consistency_1_5m: remote.swim?.consistency_1_5m ?? null,
+        consistency_gt5m: remote.swim?.consistency_gt5m ?? null,
+        swim_1_0: remote.swim?.swim_1_0 ?? null,
+      },
+      sources: Array.isArray(remote.sources) ? remote.sources : [],
+      source: "api",
+    };
+  }
+  return { ...syntheticIce(lat, lon), source: "local" };
 }
 
 export async function fetchRanking(limit = 12): Promise<DepositRanking> {
-  const remote = await tryFetch<DepositRanking>(
+  const remote = await tryFetch<RawRankingResponse>(
     `/api/deposits/rank?limit=${limit}`
   );
-  if (remote) return remote;
+  if (remote) return adapterRanking(remote);
   return syntheticRanking(limit);
+}
+
+interface RawRankingResponse {
+  deposits?: RawDeposit[];
+  bbox?: string;
+  count?: number;
 }
 
 export async function fetchBriefing(
@@ -369,8 +502,8 @@ export async function fetchBriefing(
   lon: number,
   propellantT: number,
   iceFraction: number
-): Promise<Briefing> {
-  const remote = await tryFetch<Briefing>("/api/briefing", {
+): Promise<{ briefing: Briefing; source: "api" | "local" }> {
+  const remote = await tryFetch<RawBriefing>("/api/briefing", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -380,7 +513,7 @@ export async function fetchBriefing(
       ice_fraction: iceFraction,
     }),
   });
-  if (remote) return remote;
+  if (remote) return { briefing: adapterBriefing(remote), source: "api" };
 
   // Fallback local: calcula ISRU vía backend cuando sea posible (mismo contrato).
   const isruRemote = await calculateIsru({
@@ -396,7 +529,7 @@ export async function fetchBriefing(
   const sample = syntheticIce(lat, lon);
   const score = sample.swim.swim_1_0 ?? 0;
 
-  return {
+  const briefing: Briefing = {
     site: {
       id: "AP-1",
       name: "AP-1 · Arcadia/Amazonis",
@@ -431,6 +564,7 @@ export async function fetchBriefing(
           : "BAJA PRIORIDAD — buscar vecindario con score mayor",
     generated_at: new Date().toISOString(),
   };
+  return { briefing, source: "local" };
 }
 
 /** Leyenda del colormap SWIM (-1 … +1 → riesgo → hielo). */

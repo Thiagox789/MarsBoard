@@ -7,6 +7,7 @@ export function RankingPanel() {
   const {
     deposits,
     depositsStatus,
+    depositsSource,
     loadDeposits,
     focusDeposit,
     setFocusDeposit,
@@ -20,14 +21,27 @@ export function RankingPanel() {
     <section className="border-b border-line px-4 py-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="hud-label text-ice">Ranking de yacimientos</h2>
-        <button
-          type="button"
-          className="btn-hud px-2 py-1"
-          onClick={() => void loadDeposits()}
-          disabled={depositsStatus === "loading"}
-        >
-          {depositsStatus === "loading" ? "Buscando…" : "Actualizar"}
-        </button>
+        <span className="flex items-center gap-1.5">
+          {depositsStatus === "ok" && depositsSource && (
+            <span
+              className={`border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-hud ${
+                depositsSource === "api"
+                  ? "border-ok/50 bg-ok/10 text-ok"
+                  : "border-warn/50 bg-warn/10 text-warn"
+              }`}
+            >
+              {depositsSource}
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn-hud px-2 py-1"
+            onClick={() => void loadDeposits()}
+            disabled={depositsStatus === "loading"}
+          >
+            {depositsStatus === "loading" ? "Buscando…" : "Actualizar"}
+          </button>
+        </span>
       </div>
 
       {depositsStatus === "error" && (

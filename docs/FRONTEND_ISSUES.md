@@ -265,12 +265,12 @@ F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9
 | F1 | Scaffold Next.js | ✓ |
 | F2 | Layout UI | ✓ |
 | F3 | Mapa base Marte | ✓ (tiles Trek NASA + ArcGIS CTX) |
-| F4 | Switcher de capas | ✓ (overlay cliente + leyenda; tiles reales cuando haya backend) |
-| F5 | Capas de hielo (SWIM/WEH) | ✓ (overlay cliente + leyenda; tiles reales cuando haya backend) |
-| F6 | Prospector click | ✓ (mock local `src/lib/api.ts`; swap automático si hay backend) |
+| F4 | Switcher de capas | ✓ (SWIM overlay real; WEH pendiente overlay back) |
+| F5 | Capas de hielo (SWIM/WEH) | ✓ (**SWIM real** `GET /api/ice/overlay.png` + fallback mock; WEH sin overlay en back) |
+| F6 | Prospector click | ✓ (**cableado** `GET /api/ice/sample` + adapter; badge API/LOCAL) |
 | F7 | Marcador AP-1 | ✓ (**cableado** `GET /api/site/ap1` + adapter; fallback local) |
 | F8 | Calculadora ISRU | ✓ (**cableado** `POST /api/isru/calculate`; badge API/LOCAL) |
-| F9 | Ranking + briefing | ✓ (ranking mock + briefing copiable/imprimible; ISRU del briefing usa backend) |
+| F9 | Ranking + briefing | ✓ (**cableado** `GET /api/deposits/rank` + `POST /api/briefing` + adapters; badge API/LOCAL) |
 
 ### Integración backend (rama thiago2)
 | Paso | Estado |
@@ -282,7 +282,13 @@ F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9
 | `POST /api/isru/calculate` → ISRUPanel (debounce 300ms) | ✓ |
 | Briefing fallback reutiliza ISRU del backend | ✓ |
 | Tiles MOLA/THEMIS/CTX vía trek.nasa.gov / ArcGIS | ✓ |
-| Pendiente Juli: B3 ice/sample, B5 deposits/rank, B7 briefing | ⬜ (front ya hace tryFetch → mock) |
+| `npm install` Backend (geotiff + pngjs) sin tocar código | ✓ |
+| `GET /api/ice/sample` + adapter priority/lon → Prospector | ✓ |
+| `GET /api/deposits/rank` + adapter HIGH→ALTA → Ranking/Mapa | ✓ |
+| `POST /api/briefing` + adapter site/deposit/isru → BriefingPanel | ✓ |
+| SWIM overlay real `GET /api/ice/overlay.png` (bbox 199–205°E) | ✓ |
+| Pendiente: tiles SWIM/WEH con CRS custom Leaflet | ⬜ (matriz `2^(z+1)×2^z` no es XYZ estándar) |
+| Pendiente: proxy basemap `/api/tiles/basemap` (maxZoom 8) | ⬜ |
 
 ---
 

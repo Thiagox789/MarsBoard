@@ -262,15 +262,15 @@ F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9
 
 | Issue | Título | Estado |
 |-------|--------|--------|
-| F1 | Scaffold Next.js | ⬜ |
-| F2 | Layout UI | ⬜ |
-| F3 | Mapa base Marte | ⬜ |
-| F4 | Switcher de capas | ⬜ |
-| F5 | Capas de hielo (SWIM/WEH) | ⬜ |
-| F6 | Prospector click | ⬜ |
-| F7 | Marcador AP-1 | ⬜ |
-| F8 | Calculadora ISRU | ⬜ |
-| F9 | Ranking + briefing | ⬜ |
+| F1 | Scaffold Next.js | ✓ |
+| F2 | Layout UI | ✓ |
+| F3 | Mapa base Marte | ✓ |
+| F4 | Switcher de capas | ✓ |
+| F5 | Capas de hielo (SWIM/WEH) | ✓ (overlay cliente + leyenda; tiles reales cuando haya backend) |
+| F6 | Prospector click | ✓ (mock local `src/lib/api.ts`; swap automático si hay backend) |
+| F7 | Marcador AP-1 | ✓ (datos curados locales; fetch a backend si está) |
+| F8 | Calculadora ISRU | ✓ (cálculo local; POST a backend si está) |
+| F9 | Ranking + briefing | ✓ (ranking mock + briefing copiable/imprimible) |
 
 ---
 

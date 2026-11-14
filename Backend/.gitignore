@@ -3,4 +3,5 @@ node_modules/
 src/data/cache/
 src/data/*.tif
 src/data/*.tiff
+src/data/swim/global/*.tif
 *.log

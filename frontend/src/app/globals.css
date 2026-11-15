@@ -67,6 +67,25 @@ body {
   border-color: #2a3548 !important;
 }
 
+/* Botón de capas (debajo de + / -) */
+.map-layers-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: #121826;
+  color: #e8edf7;
+  border: 1px solid #2a3548;
+  cursor: pointer;
+  transition: background 150ms, color 150ms;
+}
+
+.map-layers-btn:hover {
+  background: #1b2436;
+  color: #5dd6fc;
+}
+
 .leaflet-control-attribution {
   background: rgba(10, 14, 20, 0.8) !important;
   color: #5a657a !important;

@@ -92,26 +92,6 @@ export default function MarsMap({
       }
     });
 
-    // Marker AP-1 (F7)
-    const apIcon = L.divIcon({
-      className: "mars-marker",
-      html: `<div style="width:16px;height:16px;border:2px solid #FF6B35;background:rgba(255,107,53,0.35);transform:rotate(45deg);box-shadow:0 0 14px rgba(255,107,53,0.85);"></div>`,
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
-    });
-
-    L.marker([AP1.lat, AP1.lon180], { icon: apIcon, zIndexOffset: 1000 })
-      .bindPopup(
-        `<div style="font-family:monospace;font-size:11px;color:#E8EDF7;background:#121826;padding:8px;border:1px solid #2A3548;min-width:180px">
-          <strong style="color:#FF6B35">AP-1 · PRIME</strong><br/>
-          ${AP1.lat}°N · ${(AP1.lon - 360).toFixed(1)}°E<br/>
-          elev. ${AP1.elevationKm} km<br/>
-          ice table ${AP1.iceTableCm[0]}–${AP1.iceTableCm[1]} cm<br/>
-          WEH ${AP1.wehPercent[0]}–${AP1.wehPercent[1]}%
-        </div>`
-      )
-      .addTo(map);
-
     depositsLayerRef.current = L.layerGroup().addTo(map);
 
     // Barra de escala de referencia fija: 500 km (recalculada con zoom y latitud)
@@ -278,6 +258,7 @@ export default function MarsMap({
 
       const polyline = L.polyline(latlngs, routeStyle).addTo(map);
       routeLayersRef.current.push(polyline);
+
 
       route.forEach((w, i) => {
         const m = L.marker([w.lat, w.lon > 180 ? w.lon - 360 : w.lon], {

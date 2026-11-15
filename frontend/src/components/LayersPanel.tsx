@@ -3,15 +3,17 @@
 import { LAYERS } from "@/lib/mars";
 import { useApp } from "@/store/app-store";
 
-export function LayersPanel() {
+export function LayersPanel({
+  routeDistanceKm,
+}: {
+  routeDistanceKm?: number;
+}) {
   const {
     activeLayers,
     layerOpacity,
     toggleLayer,
     setOpacity,
     selectedPoint,
-    sample,
-    sampleStatus,
   } = useApp();
 
   return (
@@ -71,15 +73,23 @@ export function LayersPanel() {
       </ul>
 
       <div className="border-t border-line" />
-      <SectionTitle>Prospector</SectionTitle>
+      <SectionTitle>Ruta de superficie</SectionTitle>
       <div className="px-3 pb-4">
-        <p className="mb-2 text-[11px] leading-relaxed text-ink-muted">
-          Haz clic en el mapa para sondear la consistencia de hielo en ese
-          punto.
-        </p>
-
         <div className="panel bg-ground px-3 py-2">
-          <div className="hud-label mb-1">Punto seleccionado</div>
+          <div className="hud-label mb-1">Distancia recorrida</div>
+          <div className="hud-value text-sm text-ice">
+            {routeDistanceKm != null
+              ? `${routeDistanceKm.toFixed(1).replace(".", ",")} km`
+              : "—"}
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-line" />
+      <SectionTitle>Punto seleccionado</SectionTitle>
+      <div className="px-3 pb-4">
+        <div className="panel bg-ground px-3 py-2">
+          <div className="hud-label mb-1">Coordenadas</div>
           {selectedPoint ? (
             <div className="hud-value text-xs text-ice">
               {selectedPoint.lat.toFixed(4)}° ·{" "}
@@ -87,73 +97,14 @@ export function LayersPanel() {
             </div>
           ) : (
             <div className="hud-value text-xs text-ink-dim">
-              — sin señal —
+              — sin punto fijado —
             </div>
           )}
         </div>
-
-        <div className="mt-3 space-y-1.5" aria-live="polite">
-          {sampleStatus === "loading" && (
-            <p className="hud-label animate-pulse text-ice">
-              Sondeando telemetría…
-            </p>
-          )}
-          {sampleStatus === "empty" && (
-            <p className="border border-warn/40 bg-warn/10 px-2 py-1.5 font-mono text-[10px] text-warn">
-              NO SIGNAL · fuera de cobertura SWIM
-            </p>
-          )}
-          {sampleStatus === "error" && (
-            <p className="border border-mars/40 bg-mars-glow px-2 py-1.5 font-mono text-[10px] text-mars">
-              ERROR · no se pudo leer el punto
-            </p>
-          )}
-          {sampleStatus === "ok" && sample && (
-            <>
-              <ScoreRow
-                label="SWIM 0–1 m"
-                value={sample.swim.consistency_0_1m}
-              />
-              <ScoreRow
-                label="SWIM 1–5 m"
-                value={sample.swim.consistency_1_5m}
-              />
-              <ScoreRow
-                label="SWIM >5 m"
-                value={sample.swim.consistency_gt5m}
-              />
-              <MetricRow
-                label="WEH"
-                value={
-                  sample.weh_percent != null
-                    ? `${sample.weh_percent} %`
-                    : "—"
-                }
-                accent
-              />
-              <MetricRow
-                label="Profundidad"
-                value={sample.depth_hint_m ?? "—"}
-                accent
-              />
-              <div className="flex flex-wrap gap-1 pt-1">
-                {sample.sources.map((s) => (
-                  <span
-                    key={s}
-                    className="border border-line px-1 py-0.5 font-mono text-[8px] text-ink-dim"
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </>
-          )}
-          {sampleStatus === "idle" && (
-            <p className="font-mono text-[10px] text-ink-dim">
-              Esperando sondeo…
-            </p>
-          )}
-        </div>
+        <p className="mt-2 text-[11px] leading-relaxed text-ink-muted">
+          Haz clic en el mapa para fijar un punto; el marcador queda en el
+          lugar seleccionado.
+        </p>
       </div>
     </div>
   );
@@ -162,63 +113,5 @@ export function LayersPanel() {
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <h2 className="hud-label px-3 pb-2 pt-4 text-ice/80">{children}</h2>
-  );
-}
-
-function scoreClass(v: number | null): string {
-  if (v == null) return "text-ink-dim";
-  if (v >= 0.66) return "score-high";
-  if (v >= 0.33) return "score-mid";
-  return "score-low";
-}
-
-function ScoreRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: number | null;
-}) {
-  return (
-    <div className="flex items-center justify-between border-b border-line/60 pb-1">
-      <span className="text-[10px] text-ink-muted">{label}</span>
-      <span className="flex items-center gap-2">
-        <span
-          className="inline-block h-1.5 w-12 bg-line"
-          aria-hidden
-        >
-          <span
-            className={`block h-full ${value != null && value >= 0.66 ? "bg-ok" : value != null && value >= 0.33 ? "bg-warn" : "bg-mars"}`}
-            style={{
-              width: value != null ? `${Math.round(((value + 1) / 2) * 100)}%` : "0%",
-            }}
-          />
-        </span>
-        <span className={`hud-value w-8 text-right text-[11px] ${scoreClass(value)}`}>
-          {value != null ? value.toFixed(2) : "—"}
-        </span>
-      </span>
-    </div>
-  );
-}
-
-function MetricRow({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
-  return (
-    <div className="flex items-baseline justify-between border-b border-line/60 pb-1">
-      <span className="text-[10px] text-ink-muted">{label}</span>
-      <span
-        className={`hud-value text-[11px] ${accent ? "text-ice" : "text-ink"}`}
-      >
-        {value}
-      </span>
-    </div>
   );
 }

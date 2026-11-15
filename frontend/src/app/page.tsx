@@ -50,7 +50,7 @@ export default function HomePage() {
       <div className="relative flex min-h-0 flex-1">
         {leftOpen && (
           <aside className="panel z-20 hidden w-72 shrink-0 flex-col border-y-0 border-l-0 lg:flex">
-            <LayersPanel />
+            <LayersPanel routeDistanceKm={531.7} />
           </aside>
         )}
 

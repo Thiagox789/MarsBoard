@@ -16,7 +16,7 @@ echo "=========================================================="
 echo "🔴 Iniciando despliegue de MarsBoard ($DOMAIN)"
 echo "=========================================================="
 
-# 1. Verificar Docker y Docker Compose
+# 1. Verificar Docker
 if ! command -v docker &> /dev/null; then
     echo "❌ Error: Docker no está instalado." >&2
     exit 1
@@ -34,7 +34,7 @@ if [ ! -f ".env.production" ]; then
     fi
 fi
 
-# 3. Levantar los contenedores Docker desde la raíz del proyecto
+# 3. Levantar los contenedores Docker
 echo "📦 Construyendo y levantando contenedores (frontend:3000 + backend:4000)..."
 docker compose down --remove-orphans || true
 docker compose build --pull
@@ -43,51 +43,58 @@ docker compose up -d
 echo "⏳ Esperando 5 segundos a que los servicios inicien..."
 sleep 5
 
-# 3. Comprobar salud local de los contenedores
+# 4. Comprobar salud local de los contenedores
 echo "🔍 Verificando backend en localhost:4000..."
 if curl -sf http://127.0.0.1:4000/health > /dev/null; then
     echo "✅ Backend responde correctamente."
 else
-    echo "⚠️ Advertencia: Backend no respondió en /health. Revisa los logs con: docker compose logs marsboard-backend"
+    echo "⚠️ Advertencia: Backend aún no respondió en /health."
 fi
 
 echo "🔍 Verificando frontend en localhost:3000..."
 if curl -sf http://127.0.0.1:3000 > /dev/null; then
     echo "✅ Frontend responde correctamente."
 else
-    echo "⚠️ Advertencia: Frontend aún iniciando o no respondió. Revisa los logs con: docker compose logs marsboard-frontend"
+    echo "⚠️ Advertencia: Frontend aún iniciando o no respondió."
 fi
 
-# 4. Configurar Nginx en el host si existe Nginx
+# 5. Configurar Nginx y Certificado SSL (Let's Encrypt)
 if command -v nginx &> /dev/null; then
     echo "🌐 Configurando Nginx para $DOMAIN..."
-    
-    # Copiar configuración si no existe o se ejecuta con sudo
+
     if [ "$EUID" -eq 0 ]; then
-        cp "$NGINX_CONF_SRC" "$NGINX_AVAILABLE"
-        ln -sf "$NGINX_AVAILABLE" "$NGINX_ENABLED"
-        
-        # Validar configuración
-        nginx -t
-        
-        # Certbot si aún no hay certificado SSL
-        if [ ! -d "/etc/letsencrypt/live/$DOMAIN" ]; then
-            echo "🔒 Generando certificado SSL con Certbot..."
-            if command -v certbot &> /dev/null; then
-                certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --register-unsafely-without-email || true
-            else
-                echo "⚠️ certbot no está instalado. Instálalo con: sudo apt install -y certbot python3-certbot-nginx"
-            fi
+        # Copiar y activar solo si no existe o para actualizar
+        if [ ! -f "$NGINX_AVAILABLE" ]; then
+            cp "$NGINX_CONF_SRC" "$NGINX_AVAILABLE"
+            ln -sf "$NGINX_AVAILABLE" "$NGINX_ENABLED"
         fi
-        
+
+        nginx -t
+        systemctl reload nginx
+
+        # Generar certificado SSL con Certbot si aún no existe
+        if [ ! -d "/etc/letsencrypt/live/$DOMAIN" ]; then
+            echo "🔒 Solicitando certificado SSL gratuito a Let's Encrypt para $DOMAIN..."
+            if command -v certbot &> /dev/null; then
+                certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --register-unsafely-without-email --redirect
+                echo "✅ Certificado SSL generado e instalado con éxito en Nginx."
+            else
+                echo "⚠️ Certbot no está instalado en el sistema. Puedes instalarlo con:"
+                echo "   sudo apt install -y certbot python3-certbot-nginx"
+                echo "   sudo certbot --nginx -d $DOMAIN"
+            fi
+        else
+            echo "✅ Certificado SSL para $DOMAIN ya existe en /etc/letsencrypt/live/$DOMAIN"
+        fi
+
         systemctl reload nginx
         echo "✅ Nginx recargado correctamente."
     else
-        echo "ℹ️ Para activar Nginx ejecuta con permisos sudo:"
+        echo "ℹ️ Para activar Nginx y SSL ejecuta como root o con sudo:"
         echo "   sudo cp $NGINX_CONF_SRC $NGINX_AVAILABLE"
         echo "   sudo ln -sf $NGINX_AVAILABLE $NGINX_ENABLED"
-        echo "   sudo certbot --nginx -d $DOMAIN"
         echo "   sudo nginx -t && sudo systemctl reload nginx"
+        echo "   sudo certbot --nginx -d $DOMAIN"
     fi
 fi
 

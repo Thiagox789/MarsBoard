@@ -14,13 +14,16 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Asegurar que la carpeta public exista en el build
+RUN mkdir -p public
+
 ARG NEXT_PUBLIC_API_URL=/api
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build
 
-# 3. Production runner (standalone para imagen liviana y rápida)
+# 3. Production runner (standalone)
 FROM base AS runner
 WORKDIR /app
 
@@ -30,7 +33,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copiar el build standalone y los estáticos generados
+# Copiar public (asegurada) y los artefactos standalone de Next.js
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static

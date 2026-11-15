@@ -22,9 +22,20 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-# 2. Levantar los contenedores Docker desde la raíz del proyecto
-echo "📦 Construyendo y levantando contenedores (frontend:3000 + backend:4000)..."
+# 2. Asegurar que exista .env.production en la raíz
 cd "$ROOT_DIR"
+if [ ! -f ".env.production" ]; then
+    if [ -f "deploy/.env.production" ]; then
+        echo "📄 Copiando deploy/.env.production a .env.production..."
+        cp deploy/.env.production .env.production
+    elif [ -f ".env.production.example" ]; then
+        echo "📄 Creando .env.production a partir de .env.production.example..."
+        cp .env.production.example .env.production
+    fi
+fi
+
+# 3. Levantar los contenedores Docker desde la raíz del proyecto
+echo "📦 Construyendo y levantando contenedores (frontend:3000 + backend:4000)..."
 docker compose down --remove-orphans || true
 docker compose build --pull
 docker compose up -d

@@ -5,12 +5,15 @@ services:
       dockerfile: Dockerfile
     container_name: marsboard-backend
     restart: unless-stopped
+    env_file:
+      - .env.production
     environment:
-      - PORT=4000
+      - PORT=${PORT:-4000}
       - NODE_ENV=production
-      - CORS_ORIGIN=https://marsboard.iotsoluciones.cloud
+      - CORS_ORIGIN=${CORS_ORIGIN:-https://marsboard.iotsoluciones.cloud}
+      - NASA_API_KEY=${NASA_API_KEY:-}
     ports:
-      # Puerto libre en host asignado a localhost (evita colisiones con 8000, 8001, 8080, 8081)
+      # Puerto libre en host asignado a localhost
       - "127.0.0.1:4000:4000"
     volumes:
       - marsboard-cache:/app/src/data/cache
@@ -20,10 +23,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # Usa ruta relativa /api para que pase por el reverse proxy Nginx del host
-        - NEXT_PUBLIC_API_URL=/api
+        # Pasa NEXT_PUBLIC_API_URL en tiempo de build de Next.js
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-/api}
     container_name: marsboard-frontend
     restart: unless-stopped
+    env_file:
+      - .env.production
     environment:
       - PORT=3000
       - NODE_ENV=production

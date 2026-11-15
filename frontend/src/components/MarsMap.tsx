@@ -13,6 +13,9 @@ export interface Waypoint {
   lon: number; // 0–360
   label: string;
   type: "base" | "muestreo" | "comunicacion";
+  depth?: string;
+  diameter?: string;
+  expected?: string;
 }
 
 interface Props {
@@ -246,6 +249,21 @@ export default function MarsMap({
       });
     };
 
+    const routeTooltipHtml = (w: Waypoint) => {
+      const row = (name: string, value: string) =>
+        `<div><span style="color:#8b96ad">${name}:</span> ${value}</div>`;
+      const rows = [
+        w.depth ? row("Profundidad", w.depth) : "",
+        w.diameter ? row("Diámetro", w.diameter) : "",
+        w.expected ? row("Qué se espera", w.expected) : "",
+      ].join("");
+
+      return `<div style="min-width:200px;max-width:280px">
+        <div style="font-weight:600;color:#e8edf7;margin-bottom:4px">${w.label}</div>
+        ${rows ? `<div style="display:flex;flex-direction:column;gap:2px;line-height:1.45">${rows}</div>` : ""}
+      </div>`;
+    };
+
     const drawRoute = (route: Waypoint[]) => {
       // Limpiar previa
       routeLayersRef.current.forEach((layer) => map.removeLayer(layer));
@@ -265,7 +283,12 @@ export default function MarsMap({
         const m = L.marker([w.lat, w.lon > 180 ? w.lon - 360 : w.lon], {
           icon: wpIcon(w.type),
           zIndexOffset: 500 + i,
-        }).bindTooltip(w.label, { permanent: false, direction: "top", offset: [0, -10] });
+        }).bindTooltip(routeTooltipHtml(w), {
+          permanent: false,
+          direction: "top",
+          offset: [0, -10],
+          className: "route-tooltip",
+        });
         m.addTo(map);
         routeLayersRef.current.push(m);
       });

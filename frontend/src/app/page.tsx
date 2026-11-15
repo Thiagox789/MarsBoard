@@ -17,11 +17,25 @@ const MarsMap = dynamic(() => import("@/components/MarsMap"), {
 });
 
 const RUTA_ESTACIONES: Waypoint[] = [
-  { lat: 74.3192, lon: -148.4033, label: "base", type: "base" },
-  { lat: 67.6092, lon: -144.4922, label: "Yelwa", type: "muestreo" },
-  { lat: 63.2136, lon: -124.9585, label: "Punto intermedio", type: "muestreo" },
-  { lat: 52.8028, lon: -115.3125, label: "Punto intermedio", type: "muestreo" },
-  { lat: 42.0411, lon: -124.3872, label: "Tooting", type: "comunicacion" },
+  {
+    lat: 52.8028,
+    lon: -115.3125,
+    label: "Yelwa",
+    type: "muestreo",
+    depth: "indeterminada",
+    diameter: "8,20 km",
+    expected: "estudio del permafrost en esa zona",
+  },
+  {
+    lat: 42.0411,
+    lon: -124.3872,
+    label: "Tooting",
+    type: "comunicacion",
+    depth: "1690 m",
+    diameter: "27,2 km",
+    expected:
+      "estudio de bloques rocosos y trazas de impacto (probabilidad de hallar biofirmas) y establecer una base de comunicación y punto de retorno",
+  },
 ];
 
 export default function HomePage() {

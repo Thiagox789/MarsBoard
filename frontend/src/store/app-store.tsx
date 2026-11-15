@@ -44,14 +44,12 @@ const Ctx = createContext<AppState | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [activeLayers, setActiveLayers] = useState<LayerId[]>([
     "mola",
-    "swim",
   ]);
   const [layerOpacity, setLayerOpacity] = useState<Record<string, number>>({
     mola: 1,
     swim: 0.75,
-    weh: 0.7,
-    themis: 0.65,
-    hirise: 1,
+    optica: 1,
+    geofisica: 0.7,
   });
   const [selectedPoint, setSelectedPoint] = useState<{
     lat: number;

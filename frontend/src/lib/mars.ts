@@ -30,27 +30,15 @@ export const LAYERS = [
     defaultOn: true,
   },
   {
-    id: "swim",
-    label: "SWIM · consistencia de hielo",
-    source: "SWIM / PSI-NASA",
-    defaultOn: true,
-  },
-  {
-    id: "weh",
-    label: "Neutrón · WEH (%)",
-    source: "Mars Odyssey NS",
+    id: "optica",
+    label: "Óptica · Viking MDIM 2.1",
+    source: "NASA Mars Trek",
     defaultOn: false,
   },
   {
-    id: "themis",
-    label: "THEMIS · térmico",
-    source: "Mars Odyssey",
-    defaultOn: false,
-  },
-  {
-    id: "hirise",
-    label: "HiRISE · imagen alta res.",
-    source: "MRO HiRISE",
+    id: "geofisica",
+    label: "Geofísica · MOLA + HRSC",
+    source: "NASA Mars Trek",
     defaultOn: false,
   },
 ] as const;

@@ -2,7 +2,7 @@ import { AP1 } from "@/lib/mars";
 
 interface Props {
   onToggleLeft: () => void;
-  onToggleRight: () => void;
+  onToggleRight?: () => void;
 }
 
 export function Header({ onToggleLeft, onToggleRight }: Props) {
@@ -42,14 +42,16 @@ export function Header({ onToggleLeft, onToggleRight }: Props) {
             ISRU listo
           </span>
         </div>
-        <button
-          type="button"
-          className="btn-hud px-2 py-1 xl:hidden"
-          onClick={onToggleRight}
-          aria-label="Alternar panel de datos"
-        >
-          ▤
-        </button>
+        {onToggleRight && (
+          <button
+            type="button"
+            className="btn-hud px-2 py-1 xl:hidden"
+            onClick={onToggleRight}
+            aria-label="Alternar panel de datos"
+          >
+            ▤
+          </button>
+        )}
       </div>
     </header>
   );

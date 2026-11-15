@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+.env
+.env.*
+*.log
+Backend/src/data/cache
+Backend/src/data/*.tif
+Backend/src/data/*.tiff

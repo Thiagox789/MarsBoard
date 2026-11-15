@@ -1,0 +1,37 @@
+services:
+  marsboard-backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: marsboard-backend
+    restart: unless-stopped
+    environment:
+      - PORT=4000
+      - NODE_ENV=production
+      - CORS_ORIGIN=https://marsboard.iotsoluciones.cloud
+    ports:
+      # Puerto libre en host asignado a localhost (evita colisiones con 8000, 8001, 8080, 8081)
+      - "127.0.0.1:4000:4000"
+    volumes:
+      - marsboard-cache:/app/src/data/cache
+
+  marsboard-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Usa ruta relativa /api para que pase por el reverse proxy Nginx del host
+        - NEXT_PUBLIC_API_URL=/api
+    container_name: marsboard-frontend
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+    ports:
+      # Puerto libre en host asignado a localhost
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - marsboard-backend
+
+volumes:
+  marsboard-cache:

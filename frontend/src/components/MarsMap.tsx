@@ -203,6 +203,7 @@ export default function MarsMap({
           // No repetir el mapa al panear/zoom out
           noWrap: true,
           bounds: MARS_BOUNDS,
+          crossOrigin: "anonymous",
           maxZoom: limits.maxZoom,
           maxNativeZoom: limits.maxNativeZoom,
           ...(pane ? { pane } : {}),

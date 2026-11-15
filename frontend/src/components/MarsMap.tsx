@@ -50,6 +50,9 @@ export default function MarsMap({
     const map = L.map(containerRef.current, {
       center: [AP1.lat, AP1.lon180],
       zoom: 7,
+      minZoom: 3,
+      maxBounds: [[-90, -180], [90, 180]],
+      maxBoundsViscosity: 1.0,
       zoomControl: true,
       attributionControl: true,
     });
@@ -109,6 +112,7 @@ export default function MarsMap({
       if (!layersRef.current[id]) {
         layersRef.current[id] = L.tileLayer(url, {
           maxZoom: 12,
+          noWrap: true,
           attribution: "NASA",
           errorTileUrl:
             "data:image/svg+xml;utf8," +
@@ -159,7 +163,7 @@ export default function MarsMap({
         iconSize: [10, 10],
         iconAnchor: [5, 5],
       });
-      const m = L.marker([d.lat, d.lon < 0 ? d.lon + 360 : d.lon], { icon });
+      const m = L.marker([d.lat, d.lon > 180 ? d.lon - 360 : d.lon], { icon });
       m.bindTooltip(
         `score ${d.score.toFixed(2)} · ${d.priority} · ${d.distance_from_ap1_km} km`,
         { direction: "top", offset: [0, -6] }

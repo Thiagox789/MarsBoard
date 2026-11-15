@@ -17,13 +17,11 @@ const MarsMap = dynamic(() => import("@/components/MarsMap"), {
 });
 
 const RUTA_ESTACIONES: Waypoint[] = [
-  { lat: 54.813, lon: 190.562, label: "Steinheim · base", type: "base" },
-  { lat: 43.563, lon: 195.25, label: "Steinheim · punto intermedio", type: "muestreo" },
-  { lat: 40.375, lon: 209.25, label: "Punto intermedio", type: "muestreo" },
-  { lat: 37.188, lon: 209.875, label: "Punto intermedio", type: "muestreo" },
-  { lat: 31.375, lon: 212.312, label: "Yelwa · muestreo permafrost", type: "muestreo" },
-  { lat: 27.188, lon: 210.125, label: "Punto intermedio", type: "muestreo" },
-  { lat: 23.5, lon: 207.812, label: "Tooting · comunicaciones", type: "comunicacion" },
+  { lat: 74.3192, lon: -148.4033, label: "base", type: "base" },
+  { lat: 67.6092, lon: -144.4922, label: "Yelwa", type: "muestreo" },
+  { lat: 63.2136, lon: -124.9585, label: "Punto intermedio", type: "muestreo" },
+  { lat: 52.8028, lon: -115.3125, label: "Punto intermedio", type: "muestreo" },
+  { lat: 42.0411, lon: -124.3872, label: "Tooting", type: "comunicacion" },
 ];
 
 export default function HomePage() {

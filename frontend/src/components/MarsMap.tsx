@@ -37,6 +37,7 @@ export default function MarsMap({
   const focusRef = useRef(onFocusDeposit);
   const depositsLayerRef = useRef<L.LayerGroup | null>(null);
   const prospectMarkerRef = useRef<L.Marker | null>(null);
+  const scaleBarRef = useRef<HTMLDivElement | null>(null);
 
   const { layerOpacity, setRightTab, probe } = useApp();
 
@@ -90,11 +91,67 @@ export default function MarsMap({
 
     depositsLayerRef.current = L.layerGroup().addTo(map);
 
+    // Barra de escala de referencia fija: 500 km (recalculada con zoom y latitud)
+    const scaleContainer = map.getContainer();
+    const scaleBar = document.createElement("div");
+    scaleBar.style.position = "absolute";
+    scaleBar.style.bottom = "10px";
+    scaleBar.style.left = "10px";
+    scaleBar.style.zIndex = "1001";
+    scaleBar.style.pointerEvents = "none";
+    scaleBar.style.fontFamily = "var(--font-plex-mono), monospace";
+    scaleBar.style.fontSize = "10px";
+    scaleBar.style.color = "#e8edf7";
+    scaleBar.style.background = "rgba(10, 14, 20, 0.85)";
+    scaleBar.style.border = "1px solid #2a3548";
+    scaleBar.style.padding = "6px 10px";
+    scaleBar.style.borderRadius = "4px";
+    scaleBar.style.display = "flex";
+    scaleBar.style.flexDirection = "column";
+    scaleBar.style.alignItems = "flex-start";
+    scaleBar.style.gap = "2px";
+
+    const barInner = document.createElement("div");
+    barInner.style.height = "4px";
+    barInner.style.background = "#5dd6fc";
+    barInner.style.width = "100px";
+    barInner.style.boxShadow = "0 0 8px rgba(93, 214, 252, 0.6)";
+    scaleBar.appendChild(barInner);
+
+    const label = document.createElement("div");
+    label.style.fontSize = "9px";
+    label.style.color = "#8b96ad";
+    label.textContent = "500 km";
+    scaleBar.appendChild(label);
+
+    scaleContainer.appendChild(scaleBar);
+    scaleBarRef.current = scaleBar;
+
+    const updateScaleBar = () => {
+      if (!map) return;
+      const center = map.getCenter();
+      const zoom = map.getZoom();
+      const latRad = (center.lat * Math.PI) / 180;
+      const groundResolution = (156543.03392 * Math.cos(latRad)) / Math.pow(2, zoom);
+      const pixels = (500 * 1000) / groundResolution;
+      barInner.style.width = `${Math.round(pixels)}px`;
+    };
+
+    updateScaleBar();
+    map.on("zoomend moveend resize", updateScaleBar);
+
     mapRef.current = map;
     // Fix tamaño al montar
     setTimeout(() => map.invalidateSize(), 100);
 
     return () => {
+      if (map) {
+        map.off("zoomend moveend resize", updateScaleBar);
+      }
+      if (scaleBarRef.current && scaleBarRef.current.parentNode) {
+        scaleBarRef.current.parentNode.removeChild(scaleBarRef.current);
+        scaleBarRef.current = null;
+      }
       map.remove();
       mapRef.current = null;
       layersRef.current = {};

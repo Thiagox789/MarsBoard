@@ -24,6 +24,7 @@ interface Props {
   onPick: (p: { lat: number; lon: number }) => void;
   onFocusDeposit: (d: Deposit) => void;
   route?: Waypoint[];
+  onToggleLayers?: () => void;
 }
 
 const MOLA_URL =
@@ -41,12 +42,14 @@ export default function MarsMap({
   onPick,
   onFocusDeposit,
   route,
+  onToggleLayers,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layersRef = useRef<Record<string, L.TileLayer | null>>({});
   const pickRef = useRef(onPick);
   const focusRef = useRef(onFocusDeposit);
+  const toggleLayersRef = useRef(onToggleLayers);
   const depositsLayerRef = useRef<L.LayerGroup | null>(null);
   const prospectMarkerRef = useRef<L.Marker | null>(null);
   const scaleBarRef = useRef<HTMLDivElement | null>(null);
@@ -58,6 +61,7 @@ export default function MarsMap({
 
   pickRef.current = onPick;
   focusRef.current = onFocusDeposit;
+  toggleLayersRef.current = onToggleLayers;
 
   // Init mapa
   useEffect(() => {
@@ -91,6 +95,23 @@ export default function MarsMap({
         el360.textContent = `(${lat.toFixed(4)}°N · ${lng360.toFixed(4)}°E)`;
       }
     });
+
+    // Control de capas: queda apilado debajo de los botones + / -
+    const layersBtn = L.DomUtil.create("button", "map-layers-btn");
+    layersBtn.type = "button";
+    layersBtn.title = "Mostrar u ocultar el panel lateral";
+    layersBtn.setAttribute("aria-label", "Mostrar u ocultar el panel lateral");
+    layersBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`;
+    L.DomEvent.disableClickPropagation(layersBtn);
+    L.DomEvent.on(layersBtn, "click", (e) => {
+      L.DomEvent.stop(e);
+      toggleLayersRef.current?.();
+    });
+
+    const LayersControl = L.Control.extend({
+      onAdd: () => layersBtn,
+    });
+    new LayersControl({ position: "topright" }).addTo(map);
 
     depositsLayerRef.current = L.layerGroup().addTo(map);
 
@@ -281,7 +302,13 @@ export default function MarsMap({
     drawRouteRef.current = drawRoute;
     setTimeout(() => map.invalidateSize(), 100);
 
+    // El contenedor cambia de ancho al ocultar/mostrar el panel lateral:
+    // sin esto Leaflet conserva el tamaño viejo y queda una franja sin pintar.
+    const resizeObserver = new ResizeObserver(() => map.invalidateSize());
+    resizeObserver.observe(map.getContainer());
+
     return () => {
+      resizeObserver.disconnect();
       if (map) {
         map.off("zoomend moveend resize", updateScaleBar);
         map.off("moveend zoomend resize", updateGrid);

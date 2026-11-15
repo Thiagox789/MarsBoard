@@ -44,16 +44,8 @@ export default function HomePage() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-ground text-ink">
-      <Header
-        onToggleLeft={() => setLeftOpen((v) => !v)}
-      />
+      <Header />
       <div className="relative flex min-h-0 flex-1">
-        {leftOpen && (
-          <aside className="panel z-20 hidden w-72 shrink-0 flex-col border-y-0 border-l-0 lg:flex">
-            <LayersPanel routeDistanceKm={531.7} />
-          </aside>
-        )}
-
         <main className="relative min-w-0 flex-1">
           <MarsMap
             activeLayers={activeLayers}
@@ -61,6 +53,7 @@ export default function HomePage() {
             route={RUTA_ESTACIONES}
             onPick={(p) => void probe(p.lat, p.lon)}
             onFocusDeposit={(d) => setFocusDeposit(d)}
+            onToggleLayers={() => setLeftOpen((v) => !v)}
           />
 
           {/* Coordenadas del cursor (F3) */}
@@ -70,18 +63,13 @@ export default function HomePage() {
               —
             </span>
           </div>
-
-          {/* Controles mobile */}
-          <div className="absolute left-2 top-2 z-[1000] flex gap-2 lg:hidden">
-            <button
-              type="button"
-              className="btn-hud"
-              onClick={() => setLeftOpen((v) => !v)}
-            >
-              Capas
-            </button>
-          </div>
         </main>
+
+        {leftOpen && (
+          <aside className="panel z-20 hidden w-72 shrink-0 flex-col border-y-0 border-r-0 lg:flex">
+            <LayersPanel routeDistanceKm={531.7} />
+          </aside>
+        )}
       </div>
     </div>
   );

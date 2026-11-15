@@ -7,6 +7,9 @@ import { fetchBriefing, type Briefing } from "@/lib/api";
 export function BriefingPanel() {
   const { selectedPoint, focusDeposit, isru } = useApp();
   const [briefing, setBriefing] = useState<Briefing | null>(null);
+  const [briefingSource, setBriefingSource] = useState<"api" | "local">(
+    "local"
+  );
   const [status, setStatus] = useState<
     "idle" | "loading" | "ok" | "error"
   >("idle");
@@ -21,13 +24,14 @@ export function BriefingPanel() {
   const generate = async () => {
     setStatus("loading");
     try {
-      const b = await fetchBriefing(
+      const { briefing: b, source } = await fetchBriefing(
         target.lat,
         target.lon,
         isru.propellantT,
         isru.iceFraction
       );
       setBriefing(b);
+      setBriefingSource(source);
       setStatus("ok");
     } catch {
       setStatus("error");
@@ -90,8 +94,19 @@ export function BriefingPanel() {
     <section className="px-4 py-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="hud-label text-mars">Briefing de extracción</h2>
-        <span className="hud-label">
-          {target.lat.toFixed(2)}° · {target.lon.toFixed(2)}°
+        <span className="flex items-center gap-1.5">
+          <span
+            className={`border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-hud ${
+              briefingSource === "api"
+                ? "border-ok/50 bg-ok/10 text-ok"
+                : "border-warn/50 bg-warn/10 text-warn"
+            }`}
+          >
+            {briefing && status === "ok" ? briefingSource.toUpperCase() : "—"}
+          </span>
+          <span className="hud-label">
+            {target.lat.toFixed(2)}° · {target.lon.toFixed(2)}°
+          </span>
         </span>
       </div>
 

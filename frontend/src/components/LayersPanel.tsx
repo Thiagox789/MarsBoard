@@ -1,6 +1,6 @@
 "use client";
 
-import { LAYERS } from "@/lib/mars";
+import { LAYERS, LAYER_CATEGORIES, type LayerCategory, type LayerId } from "@/lib/mars";
 import { useApp } from "@/store/app-store";
 
 export function LayersPanel() {
@@ -17,60 +17,32 @@ export function LayersPanel() {
   return (
     <div className="flex min-h-0 flex-col overflow-y-auto">
       <SectionTitle>Capas NASA</SectionTitle>
-      <ul className="flex flex-col gap-2 px-3 pb-3">
-        {LAYERS.map((layer) => {
-          const on = activeLayers.includes(layer.id);
-          return (
-            <li key={layer.id} className="panel bg-ground px-2 py-1.5">
-              <button
-                type="button"
-                onClick={() => toggleLayer(layer.id)}
-                className="flex w-full items-start gap-2 text-left"
-                aria-pressed={on}
-              >
-                <span
-                  className={`mt-0.5 h-2.5 w-2.5 shrink-0 border ${
-                    on ? "border-ice bg-ice" : "border-line bg-transparent"
-                  }`}
-                />
-                <span className="min-w-0 flex-1">
-                  <span
-                    className={`block truncate text-[11px] leading-tight ${
-                      on ? "text-ink" : "text-ink-muted"
-                    }`}
-                  >
-                    {layer.label}
-                  </span>
-                  <span className="block truncate text-[9px] text-ink-dim">
-                    {layer.source}
-                  </span>
-                </span>
-              </button>
-              {on && (
-                <label className="mt-1.5 flex items-center gap-2 pl-4">
-                  <span className="hud-label !text-[8px]">Opacidad</span>
-                  <input
-                    type="range"
-                    min={10}
-                    max={100}
-                    value={Math.round((layerOpacity[layer.id] ?? 1) * 100)}
-                    onChange={(e) =>
-                      setOpacity(layer.id, Number(e.target.value) / 100)
-                    }
-                    className="h-1 flex-1 cursor-pointer appearance-none bg-line accent-ice"
-                    aria-label={`Opacidad de ${layer.label}`}
-                  />
-                  <span className="hud-value w-7 text-right text-[9px]">
-                    {Math.round((layerOpacity[layer.id] ?? 1) * 100)}%
-                  </span>
-                </label>
-              )}
-            </li>
-          );
-        })}
-      </ul>
 
-      <div className="border-t border-line" />
+      {LAYER_CATEGORIES.map((cat) => {
+        const layers = LAYERS.filter((l) => l.category === cat.id);
+        if (layers.length === 0) return null;
+        return (
+          <div key={cat.id} className="px-3 pb-2">
+            <CategoryLabel category={cat.id}>{cat.label}</CategoryLabel>
+            <ul className="flex flex-col gap-2">
+              {layers.map((layer) => (
+                <LayerRow
+                  key={layer.id}
+                  id={layer.id}
+                  label={layer.label}
+                  source={layer.source}
+                  on={activeLayers.includes(layer.id)}
+                  opacity={layerOpacity[layer.id] ?? 1}
+                  onToggle={() => toggleLayer(layer.id)}
+                  onOpacity={(v) => setOpacity(layer.id, v)}
+                />
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+
+      <div className="mt-1 border-t border-line" />
       <SectionTitle>Prospector</SectionTitle>
       <div className="px-3 pb-4">
         <p className="mb-2 text-[11px] leading-relaxed text-ink-muted">
@@ -110,6 +82,18 @@ export function LayersPanel() {
           )}
           {sampleStatus === "ok" && sample && (
             <>
+              <div className="flex items-center justify-between pb-1">
+                <span className="hud-label">Origen</span>
+                <span
+                  className={`border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-hud ${
+                    sample.source === "api"
+                      ? "border-ok/50 bg-ok/10 text-ok"
+                      : "border-warn/50 bg-warn/10 text-warn"
+                  }`}
+                >
+                  {sample.source === "api" ? "API" : "LOCAL"}
+                </span>
+              </div>
               <ScoreRow
                 label="SWIM 0–1 m"
                 value={sample.swim.consistency_0_1m}
@@ -156,6 +140,91 @@ export function LayersPanel() {
         </div>
       </div>
     </div>
+  );
+}
+
+function CategoryLabel({
+  category,
+  children,
+}: {
+  category: LayerCategory;
+  children: React.ReactNode;
+}) {
+  const tone =
+    category === "optico"
+      ? "text-warn/90"
+      : category === "topografico"
+        ? "text-ink-muted"
+        : "text-ice/90";
+  return (
+    <h3 className={`hud-label mb-1.5 ${tone}`} style={{ letterSpacing: "0.16em" }}>
+      {children}
+    </h3>
+  );
+}
+
+function LayerRow({
+  id,
+  label,
+  source,
+  on,
+  opacity,
+  onToggle,
+  onOpacity,
+}: {
+  id: LayerId;
+  label: string;
+  source: string;
+  on: boolean;
+  opacity: number;
+  onToggle: () => void;
+  onOpacity: (v: number) => void;
+}) {
+  return (
+    <li className="panel bg-ground px-2 py-1.5">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-start gap-2 text-left"
+        aria-pressed={on}
+        data-layer={id}
+      >
+        <span
+          className={`mt-0.5 h-2.5 w-2.5 shrink-0 border ${
+            on ? "border-ice bg-ice" : "border-line bg-transparent"
+          }`}
+        />
+        <span className="min-w-0 flex-1">
+          <span
+            className={`block truncate text-[11px] leading-tight ${
+              on ? "text-ink" : "text-ink-muted"
+            }`}
+          >
+            {label}
+          </span>
+          <span className="block truncate text-[9px] text-ink-dim">
+            {source}
+          </span>
+        </span>
+      </button>
+      {on && (
+        <label className="mt-1.5 flex items-center gap-2 pl-4">
+          <span className="hud-label !text-[8px]">Opacidad</span>
+          <input
+            type="range"
+            min={10}
+            max={100}
+            value={Math.round(opacity * 100)}
+            onChange={(e) => onOpacity(Number(e.target.value) / 100)}
+            className="h-1 flex-1 cursor-pointer appearance-none bg-line accent-ice"
+            aria-label={`Opacidad de ${label}`}
+          />
+          <span className="hud-value w-7 text-right text-[9px]">
+            {Math.round(opacity * 100)}%
+          </span>
+        </label>
+      )}
+    </li>
   );
 }
 

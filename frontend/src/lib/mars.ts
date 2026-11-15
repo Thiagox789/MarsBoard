@@ -22,35 +22,58 @@ export const AP1 = {
     "Sitio candidato prime para aterrizaje humano. Hielo subsuperficial accesible (ice table ~8–12 cm) con capa de exceso de decenas de metros. Terreno extremadamente plano y seguro para aterrizaje.",
 };
 
+export type LayerCategory = "optico" | "topografico" | "geofisico";
+
+export const LAYER_CATEGORIES: { id: LayerCategory; label: string }[] = [
+  { id: "optico", label: "Óptico" },
+  { id: "topografico", label: "Topografía" },
+  { id: "geofisico", label: "Geofísico" },
+];
+
 export const LAYERS = [
+  // —— Óptico (imagen / IR) ——
+  {
+    id: "themis",
+    category: "optico" as const,
+    label: "THEMIS · IR día",
+    source: "Mars Odyssey",
+    defaultOn: false,
+  },
+  {
+    id: "ctx",
+    category: "optico" as const,
+    label: "CTX · imagen media",
+    source: "MRO CTX",
+    defaultOn: false,
+  },
+  {
+    id: "hirise",
+    category: "optico" as const,
+    label: "HiRISE · alta res.",
+    source: "MRO HiRISE",
+    defaultOn: false,
+  },
+  // —— Topografía ——
   {
     id: "mola",
-    label: "MOLA · topografía",
+    category: "topografico" as const,
+    label: "MOLA · hillshade",
     source: "MGS MOLA",
     defaultOn: true,
   },
+  // —— Geofísico (hielo / neutrones) ——
   {
     id: "swim",
-    label: "SWIM · consistencia de hielo",
+    category: "geofisico" as const,
+    label: "SWIM · hielo 0–1 m",
     source: "SWIM / PSI-NASA",
     defaultOn: true,
   },
   {
     id: "weh",
+    category: "geofisico" as const,
     label: "Neutrón · WEH (%)",
     source: "Mars Odyssey NS",
-    defaultOn: false,
-  },
-  {
-    id: "themis",
-    label: "THEMIS · térmico",
-    source: "Mars Odyssey",
-    defaultOn: false,
-  },
-  {
-    id: "hirise",
-    label: "HiRISE · imagen alta res.",
-    source: "MRO HiRISE",
     defaultOn: false,
   },
 ] as const;

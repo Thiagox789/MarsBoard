@@ -27,7 +27,10 @@ const CTX_URL =
 const HIRISE_URL =
   "https://astro.arcgis.com/arcgis/rest/services/OnMars/HiRISE/MapServer/tile/{z}/{y}/{x}";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const RAW_API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const API_BASE = RAW_API_BASE.endsWith("/api")
+  ? RAW_API_BASE.slice(0, -4)
+  : RAW_API_BASE;
 
 /** Límites de Marte (Leaflet signed lon). Evita wrap/repetición del planeta. */
 const MARS_BOUNDS = L.latLngBounds([-90, -180], [90, 180]);

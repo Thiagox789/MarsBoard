@@ -64,7 +64,9 @@ export interface Briefing {
   generated_at: string;
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const RAW_API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+// Si NEXT_PUBLIC_API_URL ya termina o es "/api", normalizamos para evitar duplicar "/api/api/..."
+const API = RAW_API.endsWith("/api") ? RAW_API.slice(0, -4) : RAW_API;
 
 // —— ISRU (backend fuente de verdad; fallback local) ——
 

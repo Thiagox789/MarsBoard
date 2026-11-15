@@ -37,7 +37,7 @@ export const LAYERS = [
   },
   {
     id: "geofisica",
-    label: "Geofísica · TES albedo",
+    label: "Geofísica · MOLA + HRSC",
     source: "NASA Mars Trek",
     defaultOn: false,
   },

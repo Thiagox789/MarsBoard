@@ -22,7 +22,7 @@ const OPTICA_URL =
   "https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg";
 
 const GEOFISICA_URL =
-  "https://trek.nasa.gov/tiles/Mars/EQ/Mars_TES_Surface_Albedo_global_232m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg";
+  "https://trek.nasa.gov/tiles/Mars/EQ/Mars_MOLA_blend200ppx_HRSC_ClrShade_clon0dd_200mpp_lzw/1.0.0/default/default028mm/{z}/{y}/{x}.jpg";
 
 export default function MarsMap({
   activeLayers,

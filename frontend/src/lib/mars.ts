@@ -29,6 +29,18 @@ export const LAYERS = [
     source: "MGS MOLA",
     defaultOn: true,
   },
+  {
+    id: "optica",
+    label: "Óptica · Viking MDIM 2.1",
+    source: "NASA Mars Trek",
+    defaultOn: false,
+  },
+  {
+    id: "geofisica",
+    label: "Geofísica · TES albedo",
+    source: "NASA Mars Trek",
+    defaultOn: false,
+  },
 ] as const;
 
 export type LayerId = (typeof LAYERS)[number]["id"];

@@ -18,6 +18,12 @@ interface Props {
 const MOLA_URL =
   "https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg";
 
+const OPTICA_URL =
+  "https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg";
+
+const GEOFISICA_URL =
+  "https://trek.nasa.gov/tiles/Mars/EQ/Mars_TES_Surface_Albedo_global_232m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg";
+
 export default function MarsMap({
   activeLayers,
   deposits,
@@ -115,6 +121,8 @@ export default function MarsMap({
     };
 
     const mola = ensure("mola", MOLA_URL);
+    const optica = ensure("optica", OPTICA_URL);
+    const geofisica = ensure("geofisica", GEOFISICA_URL);
 
     const apply = (layer: L.TileLayer, on: boolean, id: string) => {
       const op = layerOpacity[id] ?? 1;
@@ -124,6 +132,8 @@ export default function MarsMap({
     };
 
     apply(mola, activeLayers.includes("mola"), "mola");
+    apply(optica, activeLayers.includes("optica"), "optica");
+    apply(geofisica, activeLayers.includes("geofisica"), "geofisica");
   }, [activeLayers, layerOpacity]);
 
   // Marcadores de ranking (F9)

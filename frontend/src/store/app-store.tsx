@@ -48,6 +48,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [layerOpacity, setLayerOpacity] = useState<Record<string, number>>({
     mola: 1,
     swim: 0.75,
+    optica: 1,
+    geofisica: 0.7,
   });
   const [selectedPoint, setSelectedPoint] = useState<{
     lat: number;

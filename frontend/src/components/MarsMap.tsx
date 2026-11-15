@@ -18,34 +18,6 @@ interface Props {
 const MOLA_URL =
   "https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg";
 
-const THEMIS_URL =
-  "https://trek.nasa.gov/tiles/Mars/EQ/Mars_MO_THEMIS-IR-Day_mosaic_global_100m_v12_clon0_ly/1.0.0/default/default028mm/{z}/{y}/{x}.png";
-
-const HIRISE_CTX_URL =
-  "https://astro.arcgis.com/arcgis/rest/services/OnMars/CTX/MapServer/tile/{z}/{y}/{x}";
-
-/**
- * Capa SWIM simulada en el cliente (overlay CSS) hasta que el backend
- * sirva tiles GeoTIFF. Pinta una malla translúcida con colormap por score.
- */
-function swimOverlayUrl(): string {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">
-    <defs>
-      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#FF6B35" stop-opacity="0.55"/>
-        <stop offset="45%" stop-color="#FFC857" stop-opacity="0.35"/>
-        <stop offset="100%" stop-color="#5DD6FC" stop-opacity="0.55"/>
-      </linearGradient>
-      <pattern id="p" width="32" height="32" patternUnits="userSpaceOnUse">
-        <rect width="32" height="32" fill="url(#g)"/>
-        <path d="M0 16h32M16 0v32" stroke="#0A0E14" stroke-opacity="0.25" stroke-width="0.5"/>
-      </pattern>
-    </defs>
-    <rect width="256" height="256" fill="url(#p)"/>
-  </svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-}
-
 export default function MarsMap({
   activeLayers,
   deposits,
@@ -55,7 +27,6 @@ export default function MarsMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layersRef = useRef<Record<string, L.TileLayer | null>>({});
-  const swimOverlayRef = useRef<L.ImageOverlay | null>(null);
   const pickRef = useRef(onPick);
   const focusRef = useRef(onFocusDeposit);
   const depositsLayerRef = useRef<L.LayerGroup | null>(null);
@@ -118,7 +89,6 @@ export default function MarsMap({
       map.remove();
       mapRef.current = null;
       layersRef.current = {};
-      swimOverlayRef.current = null;
       depositsLayerRef.current = null;
       prospectMarkerRef.current = null;
     };
@@ -145,8 +115,6 @@ export default function MarsMap({
     };
 
     const mola = ensure("mola", MOLA_URL);
-    const themis = ensure("themis", THEMIS_URL);
-    const hirise = ensure("hirise", HIRISE_CTX_URL);
 
     const apply = (layer: L.TileLayer, on: boolean, id: string) => {
       const op = layerOpacity[id] ?? 1;
@@ -156,31 +124,6 @@ export default function MarsMap({
     };
 
     apply(mola, activeLayers.includes("mola"), "mola");
-    apply(themis, activeLayers.includes("themis"), "themis");
-    apply(hirise, activeLayers.includes("hirise"), "hirise");
-
-    // SWIM overlay (mock cliente) — bbox ventana AP-1
-    const swimOn = activeLayers.includes("swim");
-    const bounds: L.LatLngBoundsExpression = [
-      [38, 202.1 - 180 - 2.5],
-      [42, 202.1 - 180 + 2.5],
-    ];
-    if (swimOn) {
-      if (!swimOverlayRef.current) {
-        swimOverlayRef.current = L.imageOverlay(swimOverlayUrl(), bounds, {
-          opacity: layerOpacity.swim ?? 0.75,
-          interactive: false,
-        });
-      }
-      swimOverlayRef.current.setOpacity(layerOpacity.swim ?? 0.75);
-      if (!map.hasLayer(swimOverlayRef.current))
-        swimOverlayRef.current.addTo(map);
-    } else if (swimOverlayRef.current && map.hasLayer(swimOverlayRef.current)) {
-      map.removeLayer(swimOverlayRef.current);
-    }
-
-    // WEH: mismo overlay con tinte distinto si está activo (placeholder)
-    // (backend B3 lo reemplaza por tiles reales)
   }, [activeLayers, layerOpacity]);
 
   // Marcadores de ranking (F9)

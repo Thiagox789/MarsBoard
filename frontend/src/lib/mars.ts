@@ -29,30 +29,6 @@ export const LAYERS = [
     source: "MGS MOLA",
     defaultOn: true,
   },
-  {
-    id: "swim",
-    label: "SWIM · consistencia de hielo",
-    source: "SWIM / PSI-NASA",
-    defaultOn: true,
-  },
-  {
-    id: "weh",
-    label: "Neutrón · WEH (%)",
-    source: "Mars Odyssey NS",
-    defaultOn: false,
-  },
-  {
-    id: "themis",
-    label: "THEMIS · térmico",
-    source: "Mars Odyssey",
-    defaultOn: false,
-  },
-  {
-    id: "hirise",
-    label: "HiRISE · imagen alta res.",
-    source: "MRO HiRISE",
-    defaultOn: false,
-  },
 ] as const;
 
 export type LayerId = (typeof LAYERS)[number]["id"];

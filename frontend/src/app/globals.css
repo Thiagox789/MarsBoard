@@ -55,10 +55,19 @@ body {
   }
 }
 
-/* Leaflet dark chrome */
+/* Leaflet dark chrome — sin tile wrapping (un solo globo Marte) */
 .leaflet-container {
   background: #0a0e14 !important;
   font-family: var(--font-plex-mono), monospace;
+}
+
+.leaflet-tile-container {
+  /* Evita que Leaflet clone tiles horizontalmente al hacer pan */
+  overflow: hidden;
+}
+
+.leaflet-pane.leaflet-tile-pane {
+  overflow: hidden;
 }
 
 .leaflet-control-zoom a {

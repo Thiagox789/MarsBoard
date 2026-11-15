@@ -51,7 +51,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     mola: 1,
     swim: 0.75,
     weh: 0.7,
-    themis: 0.65,
+    themis: 1,
+    ctx: 0.85,
     hirise: 1,
   });
   const [selectedPoint, setSelectedPoint] = useState<{

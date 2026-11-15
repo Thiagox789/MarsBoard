@@ -75,9 +75,17 @@ export default function MarsMap({
     });
 
     map.on("mousemove", (e) => {
+      const lng = e.latlng.lng;
+      const lat = e.latlng.lat;
+      const lng360 = lng < 0 ? lng + 360 : lng;
+
       const el = document.getElementById("mars-cursor-coords");
+      const el360 = document.getElementById("mars-cursor-coords-360");
       if (el) {
-        el.textContent = `${e.latlng.lat.toFixed(4)}° · ${e.latlng.lng.toFixed(4)}°`;
+        el.textContent = `${lat.toFixed(4)}° · ${lng.toFixed(4)}°`;
+      }
+      if (el360) {
+        el360.textContent = `(${lat.toFixed(4)}°N · ${lng360.toFixed(4)}°E)`;
       }
     });
 

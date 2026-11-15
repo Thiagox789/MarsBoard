@@ -8,11 +8,19 @@ import { useApp } from "@/store/app-store";
 import { subscribeSelected } from "@/lib/bus";
 import type { Deposit } from "@/lib/api";
 
+export interface Waypoint {
+  lat: number;
+  lon: number; // 0–360
+  label: string;
+  type: "base" | "muestreo" | "comunicacion";
+}
+
 interface Props {
   activeLayers: LayerId[];
   deposits: Deposit[];
   onPick: (p: { lat: number; lon: number }) => void;
   onFocusDeposit: (d: Deposit) => void;
+  route?: Waypoint[];
 }
 
 const MOLA_URL =
@@ -29,6 +37,7 @@ export default function MarsMap({
   deposits,
   onPick,
   onFocusDeposit,
+  route,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -38,6 +47,9 @@ export default function MarsMap({
   const depositsLayerRef = useRef<L.LayerGroup | null>(null);
   const prospectMarkerRef = useRef<L.Marker | null>(null);
   const scaleBarRef = useRef<HTMLDivElement | null>(null);
+  const gridLayersRef = useRef<L.Layer[]>([]);
+  const routeLayersRef = useRef<L.Layer[]>([]);
+  const drawRouteRef = useRef<((r: Waypoint[]) => void) | null>(null);
 
   const { layerOpacity, setRightTab, probe } = useApp();
 
@@ -95,8 +107,8 @@ export default function MarsMap({
     const scaleContainer = map.getContainer();
     const scaleBar = document.createElement("div");
     scaleBar.style.position = "absolute";
-    scaleBar.style.bottom = "10px";
-    scaleBar.style.left = "10px";
+    scaleBar.style.bottom = "80px";
+    scaleBar.style.right = "10px";
     scaleBar.style.zIndex = "1001";
     scaleBar.style.pointerEvents = "none";
     scaleBar.style.fontFamily = "var(--font-plex-mono), monospace";
@@ -141,17 +153,135 @@ export default function MarsMap({
     map.on("zoomend moveend resize", updateScaleBar);
 
     mapRef.current = map;
-    // Fix tamaño al montar
+
+    // Grilla de cuadrantes dinámica: se adapta al zoom y al área visible
+    const gridStyle = {
+      color: "#2a3548",
+      weight: 1,
+      opacity: 0.35,
+      interactive: false,
+      pointerEvents: false,
+    } as const;
+
+    const stepForZoom = (z: number): number => {
+      if (z < 5) return 10;
+      if (z < 7) return 5;
+      return 1;
+    };
+
+    const updateGrid = () => {
+      if (!map) return;
+
+      // Limpiar grilla previa
+      gridLayersRef.current.forEach((layer) => map.removeLayer(layer));
+      gridLayersRef.current = [];
+
+      const bounds = map.getBounds();
+      const step = stepForZoom(map.getZoom());
+
+      // Rango de latitudes visibles, alineado al paso
+      const latMin = Math.floor(bounds.getSouth() / step) * step;
+      const latMax = Math.ceil(bounds.getNorth() / step) * step;
+      // Rango de longitudes visibles, alineado al paso
+      const lonMin = Math.floor(bounds.getWest() / step) * step;
+      const lonMax = Math.ceil(bounds.getEast() / step) * step;
+
+      // Líneas horizontales (const lat)
+      for (let lat = latMin; lat <= latMax; lat += step) {
+        const line = L.polyline(
+          [
+            [lat, lonMin],
+            [lat, lonMax],
+          ],
+          gridStyle
+        ).addTo(map);
+        gridLayersRef.current.push(line);
+      }
+
+      // Líneas verticales (const lon)
+      for (let lon = lonMin; lon <= lonMax; lon += step) {
+        const line = L.polyline(
+          [
+            [latMin, lon],
+            [latMax, lon],
+          ],
+          gridStyle
+        ).addTo(map);
+        gridLayersRef.current.push(line);
+      }
+    };
+
+    updateGrid();
+    map.on("moveend zoomend resize", updateGrid);
+
+    // Trazado de ruta (rutas de superficie entre estaciones)
+    const routeStyle = {
+      color: "#5dd6fc",
+      weight: 3,
+      opacity: 0.85,
+      interactive: false,
+      pointerEvents: false,
+      dashArray: "8, 8",
+    } as const;
+
+    const wpIcon = (type: Waypoint["type"]) => {
+      const baseStyles: Record<string, string> = {
+        base: "#ff6b35",
+        muestreo: "#3dfaa0",
+        comunicacion: "#ffd166",
+      };
+      return L.divIcon({
+        className: "",
+        html: `<div style="width:14px;height:14px;border-radius:50%;background:${baseStyles[type]};border:2px solid #0a0e14;box-shadow:0 0 10px ${baseStyles[type]};"></div>`,
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      });
+    };
+
+    const drawRoute = (route: Waypoint[]) => {
+      // Limpiar previa
+      routeLayersRef.current.forEach((layer) => map.removeLayer(layer));
+      routeLayersRef.current = [];
+
+      if (!route || route.length < 2) return;
+
+      const latlngs: [number, number][] = route.map((w) => [
+        w.lat,
+        w.lon > 180 ? w.lon - 360 : w.lon,
+      ]);
+
+      const polyline = L.polyline(latlngs, routeStyle).addTo(map);
+      routeLayersRef.current.push(polyline);
+
+      route.forEach((w, i) => {
+        const m = L.marker([w.lat, w.lon > 180 ? w.lon - 360 : w.lon], {
+          icon: wpIcon(w.type),
+          zIndexOffset: 500 + i,
+        }).bindTooltip(w.label, { permanent: false, direction: "top", offset: [0, -10] });
+        m.addTo(map);
+        routeLayersRef.current.push(m);
+      });
+
+      // Ajustar vista a la ruta
+      const bounds = L.latLngBounds(latlngs);
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 8 });
+    };
+    drawRouteRef.current = drawRoute;
     setTimeout(() => map.invalidateSize(), 100);
 
     return () => {
       if (map) {
         map.off("zoomend moveend resize", updateScaleBar);
+        map.off("moveend zoomend resize", updateGrid);
       }
       if (scaleBarRef.current && scaleBarRef.current.parentNode) {
         scaleBarRef.current.parentNode.removeChild(scaleBarRef.current);
         scaleBarRef.current = null;
       }
+      gridLayersRef.current.forEach((layer) => map.removeLayer(layer));
+      gridLayersRef.current = [];
+      routeLayersRef.current.forEach((layer) => map.removeLayer(layer));
+      routeLayersRef.current = [];
       map.remove();
       mapRef.current = null;
       layersRef.current = {};
@@ -265,6 +395,13 @@ export default function MarsMap({
 
     return unsub;
   }, []);
+
+  // Trazado de ruta: reacciona a cambios en la prop route
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !drawRouteRef.current) return;
+    drawRouteRef.current(route ?? []);
+  }, [route]);
 
   return <div ref={containerRef} className="h-full w-full" />;
 }

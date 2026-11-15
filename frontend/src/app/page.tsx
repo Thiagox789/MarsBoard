@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Header } from "@/components/Header";
 import { LayersPanel } from "@/components/LayersPanel";
 import { useApp } from "@/store/app-store";
+import type { Waypoint } from "@/components/MarsMap";
 
 const MarsMap = dynamic(() => import("@/components/MarsMap"), {
   ssr: false,
@@ -14,6 +15,12 @@ const MarsMap = dynamic(() => import("@/components/MarsMap"), {
     </div>
   ),
 });
+
+const RUTA_ESTACIONES: Waypoint[] = [
+  { lat: 43.625, lon: 195.125, label: "Streinheim (base)", type: "base" },
+  { lat: 31.25, lon: 212.188, label: "Yelma · muestreo permafrost", type: "muestreo" },
+  { lat: 23.375, lon: 207.625, label: "Tooting · comunicaciones", type: "comunicacion" },
+];
 
 export default function HomePage() {
   const { activeLayers, probe, deposits, setFocusDeposit } = useApp();
@@ -35,12 +42,13 @@ export default function HomePage() {
           <MarsMap
             activeLayers={activeLayers}
             deposits={deposits}
+            route={RUTA_ESTACIONES}
             onPick={(p) => void probe(p.lat, p.lon)}
             onFocusDeposit={(d) => setFocusDeposit(d)}
           />
 
           {/* Coordenadas del cursor (F3) */}
-          <div className="pointer-events-none absolute bottom-2 left-2 z-[1000] border border-line bg-ground/90 px-2 py-1 font-mono text-[10px] backdrop-blur">
+          <div className="pointer-events-none absolute bottom-2 right-2 z-[1000] border border-line bg-ground/90 px-2 py-1 font-mono text-[10px] backdrop-blur">
             <span className="text-ink-dim">CURSOR </span>
             <span id="mars-cursor-coords" className="text-ice">
               —

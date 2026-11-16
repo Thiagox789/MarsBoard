@@ -18,6 +18,15 @@ export interface Waypoint {
   expected?: string;
 }
 
+export interface TerrainInfo {
+  /** Unidad del terreno, p. ej. "Azul" o "Bloques de eyección". */
+  label: string;
+  /** Color de referencia del colormap (para pintar la etiqueta). */
+  color: string;
+  icon?: string;
+  body: string;
+}
+
 interface Props {
   activeLayers: LayerId[];
   deposits: Deposit[];
@@ -26,6 +35,8 @@ interface Props {
   route?: Waypoint[];
   onToggleLayers?: () => void;
   onToggleInfo?: () => void;
+  /** Texto de la unidad de terreno bajo el cursor (solo capas topológica/óptica). */
+  onTerrainHover?: (terrain: TerrainInfo | null) => void;
 }
 
 const MOLA_URL =
@@ -37,6 +48,126 @@ const OPTICA_URL =
 const GEOFISICA_URL =
   "https://trek.nasa.gov/tiles/Mars/EQ/Mars_MOLA_blend200ppx_HRSC_ClrShade_clon0dd_200mpp_lzw/1.0.0/default/default028mm/{z}/{y}/{x}.jpg";
 
+/** Leyenda por color del colormap MOLA (solo capa topológica). */
+const MOLA_LEGEND = {
+  azul: {
+    label: "Azul",
+    color: "#3aa1ce",
+    body: "Llanuras de baja elevación dominadas por superficies volcánicas y coladas de lava; en Arcadia también representa sectores con evidencia de hielo de agua subsuperficial en exceso.",
+  },
+  verde: {
+    label: "Verde",
+    color: "#4ad08a",
+    body: "Terrenos de transición con variaciones de textura y morfología superficial; representan sectores de regolito que requieren evaluación detallada.",
+  },
+  amarillo: {
+    label: "Amarillo",
+    color: "#ffd166",
+    body: "Sectores donde se analiza la relación entre materiales superficiales y hielo subsuperficial, asociada a cambios en la morfología del terreno.",
+  },
+  marron: {
+    label: "Marrón",
+    color: "#c98a4b",
+    body: "Bordes y depósitos asociados a cráteres de impacto, incluyendo rampas y materiales de eyección que permiten interpretar la estratigrafía local.",
+  },
+  rojo: {
+    label: "Rojo",
+    color: "#ff6b35",
+    body: "Sectores de mayor pendiente y relieve, como bordes elevados, paredes y otras zonas topográficamente prominentes de los cráteres.",
+  },
+} satisfies Record<string, TerrainInfo>;
+
+/** Leyenda de la capa óptica (tono y textura superficial). */
+const OPTICAL_LEGEND = {
+  bloques: {
+    label: "Bloques de eyección",
+    icon: "🪨",
+    color: "#d8c3a5",
+    body: "Fragmentos expulsados durante impactos.",
+  },
+  megabrecha: {
+    label: "Megabrecha rocosa",
+    icon: "⛰️",
+    color: "#a99a86",
+    body: "Fragmentos rocosos mezclados por impactos.",
+  },
+  pozos: {
+    label: "Pozos de sublimación / Pitted materials",
+    icon: "🕳️",
+    color: "#8fa1b4",
+    body: "Superficies con depresiones y cavidades.",
+  },
+  dunas: {
+    label: "Dunas de polvo eólico",
+    icon: "💨",
+    color: "#e7d6b8",
+    body: "Sedimentos acumulados y transportados por viento.",
+  },
+  coladas: {
+    label: "Coladas basálticas superficiales",
+    icon: "🌋",
+    color: "#9b7bd6",
+    body: "Flujos de lava sobre la superficie.",
+  },
+} satisfies Record<string, TerrainInfo>;
+
+/** Devuelve la leyenda del color MOLA bajo el cursor (o null si es gris/sin datos). */
+function molaLegend(r: number, g: number, b: number): TerrainInfo | null {
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+  if (max < 50 || d === 0) return null;
+  if (d / max < 0.25) return null;
+  let h: number;
+  if (max === r) h = 60 * (((g - b) / d) % 6);
+  else if (max === g) h = 60 * ((b - r) / d + 2);
+  else h = 60 * ((r - g) / d + 4);
+  if (h < 0) h += 360;
+
+  // Rampa MOLA: azul → verde → amarillo → naranja/marrón → rojo/blanco.
+  if (h >= 290 || h < 10) return MOLA_LEGEND.rojo;
+  if (h < 45) return MOLA_LEGEND.marron;
+  if (h < 90) return MOLA_LEGEND.amarillo;
+  if (h < 185) return MOLA_LEGEND.verde;
+  return MOLA_LEGEND.azul;
+}
+
+/**
+ * Leyenda de la capa óptica: aproximación por albedo y contraste local de una
+ * ventana de 9×9 px. No es un mapa geológico, orienta la lectura visual.
+ */
+function opticalLegend(
+  pixels: ImageData,
+  px: number,
+  py: number
+): TerrainInfo | null {
+  const R = 4;
+  let sum = 0;
+  let sumSq = 0;
+  let n = 0;
+  for (let y = Math.max(0, py - R); y <= Math.min(pixels.height - 1, py + R); y++) {
+    for (let x = Math.max(0, px - R); x <= Math.min(pixels.width - 1, px + R); x++) {
+      const i = (y * pixels.width + x) * 4;
+      const lum =
+        0.299 * pixels.data[i] + 0.587 * pixels.data[i + 1] + 0.114 * pixels.data[i + 2];
+      sum += lum;
+      sumSq += lum * lum;
+      n++;
+    }
+  }
+  if (!n) return null;
+
+  const mean = sum / n;
+  const sd = Math.sqrt(Math.max(0, sumSq / n - mean * mean));
+
+  // Muy contrastado = material fragmentado por impacto; liso y claro = polvo;
+  // liso y oscuro = basalto; el resto, superficie con depresiones.
+  if (sd >= 10) return mean >= 120 ? OPTICAL_LEGEND.bloques : OPTICAL_LEGEND.megabrecha;
+  if (mean >= 150) return OPTICAL_LEGEND.dunas;
+  if (mean <= 82) return OPTICAL_LEGEND.coladas;
+  return OPTICAL_LEGEND.pozos;
+}
+
 export default function MarsMap({
   activeLayers,
   deposits,
@@ -45,6 +176,7 @@ export default function MarsMap({
   route,
   onToggleLayers,
   onToggleInfo,
+  onTerrainHover,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -53,6 +185,7 @@ export default function MarsMap({
   const focusRef = useRef(onFocusDeposit);
   const toggleLayersRef = useRef(onToggleLayers);
   const toggleInfoRef = useRef(onToggleInfo);
+  const terrainRef = useRef(onTerrainHover);
   const depositsLayerRef = useRef<L.LayerGroup | null>(null);
   const prospectMarkerRef = useRef<L.Marker | null>(null);
   const scaleBarRef = useRef<HTMLDivElement | null>(null);
@@ -66,6 +199,7 @@ export default function MarsMap({
   focusRef.current = onFocusDeposit;
   toggleLayersRef.current = onToggleLayers;
   toggleInfoRef.current = onToggleInfo;
+  terrainRef.current = onTerrainHover;
 
   // Init mapa
   useEffect(() => {
@@ -85,6 +219,97 @@ export default function MarsMap({
       pickRef.current({ lat: e.latlng.lat, lon: e.latlng.lng });
     });
 
+    // Lectura del píxel MOLA bajo el cursor: cachea los píxeles de cada tesela
+    // ya cargada y clasifica el color del colormap de elevación.
+    const tilePixels = new WeakMap<HTMLImageElement, ImageData>();
+    let readCanvas: HTMLCanvasElement | null = null;
+    let pixelReadBlocked = false;
+    let lastTerrain: TerrainInfo | null = null;
+
+    type TileHit = { pixels: ImageData; px: number; py: number };
+
+    const readTile = (img: HTMLImageElement): ImageData | null => {
+      const cached = tilePixels.get(img);
+      if (cached) return cached;
+      if (pixelReadBlocked || !img.naturalWidth) return null;
+      try {
+        readCanvas ??= document.createElement("canvas");
+        readCanvas.width = img.naturalWidth;
+        readCanvas.height = img.naturalHeight;
+        const ctx = readCanvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) return null;
+        ctx.drawImage(img, 0, 0);
+        const data = ctx.getImageData(0, 0, readCanvas.width, readCanvas.height);
+        tilePixels.set(img, data);
+        return data;
+      } catch {
+        // Canvas contaminado (sin CORS) → se desactiva la lectura.
+        pixelReadBlocked = true;
+        return null;
+      }
+    };
+
+    // Píxel de la tesela cargada que hay bajo el cursor en una capa dada.
+    const pixelUnder = (
+      layer: L.TileLayer,
+      clientX: number,
+      clientY: number
+    ): TileHit | null => {
+      const pane = layer.getContainer();
+      if (!pane) return null;
+
+      for (const img of Array.from(pane.querySelectorAll("img"))) {
+        const box = img.getBoundingClientRect();
+        if (
+          clientX < box.left ||
+          clientX > box.right ||
+          clientY < box.top ||
+          clientY > box.bottom
+        ) {
+          continue;
+        }
+        const pixels = readTile(img);
+        if (!pixels) return null;
+        const px = Math.min(
+          pixels.width - 1,
+          Math.max(0, Math.floor(((clientX - box.left) / box.width) * pixels.width))
+        );
+        const py = Math.min(
+          pixels.height - 1,
+          Math.max(0, Math.floor(((clientY - box.top) / box.height) * pixels.height))
+        );
+        return { pixels, px, py };
+      }
+      return null;
+    };
+
+    const terrainUnder = (clientX: number, clientY: number): TerrainInfo | null => {
+      // La óptica se apila encima de la topológica: si está visible, manda.
+      const optical = layersRef.current.optica;
+      if (optical && map.hasLayer(optical)) {
+        const hit = pixelUnder(optical, clientX, clientY);
+        if (hit) return opticalLegend(hit.pixels, hit.px, hit.py);
+      }
+
+      const mola = layersRef.current.mola;
+      if (!mola || !map.hasLayer(mola)) return null;
+      const hit = pixelUnder(mola, clientX, clientY);
+      if (!hit) return null;
+      const i = (hit.py * hit.pixels.width + hit.px) * 4;
+      const [r, g, b] = [
+        hit.pixels.data[i],
+        hit.pixels.data[i + 1],
+        hit.pixels.data[i + 2],
+      ];
+      return molaLegend(r, g, b);
+    };
+
+    const pushTerrain = (terrain: TerrainInfo | null) => {
+      if (terrain === lastTerrain) return;
+      lastTerrain = terrain;
+      terrainRef.current?.(terrain);
+    };
+
     map.on("mousemove", (e) => {
       const lng = e.latlng.lng;
       const lat = e.latlng.lat;
@@ -98,7 +323,12 @@ export default function MarsMap({
       if (el360) {
         el360.textContent = `(${lat.toFixed(4)}°N · ${lng360.toFixed(4)}°E)`;
       }
+
+      pushTerrain(terrainUnder(e.originalEvent.clientX, e.originalEvent.clientY));
     });
+
+    map.on("mouseout", () => pushTerrain(null));
+    map.on("zoomstart", () => pushTerrain(null));
 
     // Control de capas: queda apilado debajo de los botones + / -
     const layersBtn = L.DomUtil.create("button", "map-layers-btn");
@@ -364,6 +594,8 @@ export default function MarsMap({
           maxZoom: 12,
           noWrap: true,
           attribution: "NASA",
+          // Necesario para leer el píxel bajo el cursor (NASA Mars Trek envía CORS *)
+          crossOrigin: true,
           errorTileUrl:
             "data:image/svg+xml;utf8," +
             encodeURIComponent(

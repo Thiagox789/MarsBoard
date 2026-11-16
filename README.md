@@ -4,6 +4,8 @@
 
 Identificación de depósitos de agua en Marte para la generación de combustibles (CH₄/O₂) para la propulsión de cohetes y naves mediante ISRU (*In-Situ Resource Utilization*).
 
+🔗 **Demo en vivo:** https://marsboard.iotsoluciones.cloud/
+
 ---
 
 ## El problema

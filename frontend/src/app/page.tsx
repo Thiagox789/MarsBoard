@@ -6,7 +6,7 @@ import { Header } from "@/components/Header";
 import { LayersPanel } from "@/components/LayersPanel";
 import { InfoPanel } from "@/components/InfoPanel";
 import { useApp } from "@/store/app-store";
-import type { Waypoint } from "@/components/MarsMap";
+import type { TerrainInfo, Waypoint } from "@/components/MarsMap";
 
 const MarsMap = dynamic(() => import("@/components/MarsMap"), {
   ssr: false,
@@ -45,6 +45,7 @@ export default function HomePage() {
   const [panelWidth, setPanelWidth] = useState(288);
   const [infoWidth, setInfoWidth] = useState(288);
   const [infoOpen, setInfoOpen] = useState(true);
+  const [terrain, setTerrain] = useState<TerrainInfo | null>(null);
   const resizingRef = useRef<"left" | "right" | null>(null);
 
   // Arrastre del borde de los paneles laterales para achicarlos / agrandarlos
@@ -107,14 +108,27 @@ export default function HomePage() {
             onFocusDeposit={(d) => setFocusDeposit(d)}
             onToggleLayers={() => setLeftOpen((v) => !v)}
             onToggleInfo={() => setInfoOpen((v) => !v)}
+            onTerrainHover={setTerrain}
           />
 
           {/* Coordenadas del cursor (F3) */}
-          <div className="pointer-events-none absolute bottom-2 right-2 z-[1000] border border-line bg-ground/90 px-2 py-1 font-mono text-[10px] backdrop-blur">
-            <span className="text-ink-dim">CURSOR </span>
-            <span id="mars-cursor-coords" className="text-ice">
-              —
-            </span>
+          <div className="pointer-events-none absolute bottom-2 right-2 z-[1000] max-w-[340px] border border-line bg-ground/90 px-2 py-1 font-mono text-[10px] backdrop-blur">
+            <div>
+              <span className="text-ink-dim">CURSOR </span>
+              <span id="mars-cursor-coords" className="text-ice">
+                —
+              </span>
+            </div>
+            {terrain && (
+              <div className="mt-1 max-w-[320px] border-l-2 border-ice/70 pl-2 leading-relaxed text-ice/90">
+                <span className="text-ink-dim">TERRENO </span>
+                {terrain.icon && <span className="mr-1">{terrain.icon}</span>}
+                <span className="font-semibold" style={{ color: terrain.color }}>
+                  {terrain.label}:
+                </span>{" "}
+                {terrain.body}
+              </div>
+            )}
           </div>
         </main>
 

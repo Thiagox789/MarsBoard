@@ -25,6 +25,7 @@ interface Props {
   onFocusDeposit: (d: Deposit) => void;
   route?: Waypoint[];
   onToggleLayers?: () => void;
+  onToggleInfo?: () => void;
 }
 
 const MOLA_URL =
@@ -43,6 +44,7 @@ export default function MarsMap({
   onFocusDeposit,
   route,
   onToggleLayers,
+  onToggleInfo,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -50,6 +52,7 @@ export default function MarsMap({
   const pickRef = useRef(onPick);
   const focusRef = useRef(onFocusDeposit);
   const toggleLayersRef = useRef(onToggleLayers);
+  const toggleInfoRef = useRef(onToggleInfo);
   const depositsLayerRef = useRef<L.LayerGroup | null>(null);
   const prospectMarkerRef = useRef<L.Marker | null>(null);
   const scaleBarRef = useRef<HTMLDivElement | null>(null);
@@ -62,6 +65,7 @@ export default function MarsMap({
   pickRef.current = onPick;
   focusRef.current = onFocusDeposit;
   toggleLayersRef.current = onToggleLayers;
+  toggleInfoRef.current = onToggleInfo;
 
   // Init mapa
   useEffect(() => {
@@ -112,6 +116,26 @@ export default function MarsMap({
       onAdd: () => layersBtn,
     });
     new LayersControl({ position: "topright" }).addTo(map);
+
+    // Control de información: panel lateral opuesto
+    const infoBtn = L.DomUtil.create("button", "map-layers-btn");
+    infoBtn.type = "button";
+    infoBtn.title = "Mostrar u ocultar la información de la misión";
+    infoBtn.setAttribute(
+      "aria-label",
+      "Mostrar u ocultar la información de la misión"
+    );
+    infoBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
+    L.DomEvent.disableClickPropagation(infoBtn);
+    L.DomEvent.on(infoBtn, "click", (e) => {
+      L.DomEvent.stop(e);
+      toggleInfoRef.current?.();
+    });
+
+    const InfoControl = L.Control.extend({
+      onAdd: () => infoBtn,
+    });
+    new InfoControl({ position: "topleft" }).addTo(map);
 
     depositsLayerRef.current = L.layerGroup().addTo(map);
 
